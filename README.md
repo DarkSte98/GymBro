@@ -32,3 +32,16 @@ Non c'è backend/account cloud. Instagram non offre un pulsante universale per p
 - Trascina gli adesivi per posizionarli; usa il punto lime nell'angolo per ridimensionarli.
 - Selettore adesivo, stili traslucido/lime e ripristino posizione.
 - Cache service worker aggiornata a `gymbro-v8-sticker-editor`.
+
+## v9 — Riordino esercizi
+- Nella modifica della scheda e durante l'allenamento gli esercizi possono essere riordinati con le frecce ↑/↓.
+- Il simbolo ⠿ a sinistra di ogni esercizio permette di trascinarlo nella posizione desiderata, anche su dispositivi touch compatibili.
+- Riordinare durante una sessione aggiorna anche l'ordine della scheda salvata.
+- Cache del service worker aggiornata a `gymbro-v9-exercise-reorder`.
+
+
+## v10 — adesivi trasparenti
+- La foto caricata resta sfondo indipendente, senza pannelli opachi o filtro globale.
+- Titolo e statistiche sono elementi di solo testo, trascinabili individualmente.
+- Il punto verde ridimensiona solo l'elemento selezionato.
+- I bordi di selezione e le maniglie di modifica non vengono inclusi nel PNG esportato.

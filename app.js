@@ -106,7 +106,7 @@
   }
   function renderEditorExercises(){
     const root=$("#editorExercises");
-    root.innerHTML=editorExerciseIds.length?editorExerciseIds.map((id,i)=>{const e=exById(id);return `<div class="exercise-card"><div class="card-head"><div><p class="card-title">${escapeHTML(e?.name||"Esercizio")}</p><div class="muted">${e?.muscle||""}</div></div><div class="card-actions"><button class="secondary" data-action="move-editor-up" data-index="${i}" ${i===0?"disabled":""}>↑</button><button class="secondary" data-action="move-editor-down" data-index="${i}" ${i===editorExerciseIds.length-1?"disabled":""}>↓</button><button class="secondary" data-action="remove-editor-exercise" data-index="${i}">Rimuovi</button></div></div></div>`}).join(""):'<div class="empty">Nessun esercizio. Premi “Aggiungi”.</div>';
+    root.innerHTML=editorExerciseIds.length?editorExerciseIds.map((id,i)=>{const e=exById(id);return `<div class="exercise-card reorder-card" data-reorder-index="${i}"><div class="card-head"><button class="drag-handle" type="button" aria-label="Trascina per riordinare" title="Trascina per riordinare">⠿</button><div class="reorder-title"><p class="card-title">${escapeHTML(e?.name||"Esercizio")}</p><div class="muted">${e?.muscle||""}</div></div><div class="card-actions reorder-actions"><button class="secondary" data-action="move-editor-up" data-index="${i}" ${i===0?"disabled":""} aria-label="Sposta sopra">↑</button><button class="secondary" data-action="move-editor-down" data-index="${i}" ${i===editorExerciseIds.length-1?"disabled":""} aria-label="Sposta sotto">↓</button><button class="secondary" data-action="remove-editor-exercise" data-index="${i}">Rimuovi</button></div></div></div>`}).join(""):'<div class="empty">Nessun esercizio. Premi “Aggiungi”.</div>';
   }
   function addExerciseToEditor(id){
     if(!editorExerciseIds.includes(id)){editorExerciseIds.push(id);renderEditorExercises();showToast("Esercizio aggiunto.");}
@@ -153,7 +153,7 @@
     $("#sessionExercises").innerHTML=s.exercises.map((e,ei)=>{
       const done=e.setsLog.filter(x=>x.done).length;
       const isRest=s.restExerciseId===e.id && s.restEndsAt;
-      return `<article class="exercise-card session-exercise ${isRest?"active-rest":""}"><div class="card-head"><div><div class="muscle">${escapeHTML(e.muscle)}</div><p class="card-title" style="margin-top:6px">${escapeHTML(e.name)}</p><div class="muted">${done}/${e.setsLog.length} serie completate · Recupero ${e.rest}s ${e.unilateral?"· unilaterale":""} ${e.circuit?"· circuito":""}</div></div><button class="secondary" data-action="session-edit" data-index="${ei}">Modifica</button></div><div class="set-list">${e.setsLog.map((set,si)=>`<div class="set-row"><span class="set-number">S${si+1}</span><input type="number" min="0" step="0.5" aria-label="Kg serie ${si+1}" value="${set.weight}" data-action="log-weight" data-ei="${ei}" data-si="${si}" placeholder="kg"><input type="number" min="1" step="1" aria-label="Ripetizioni serie ${si+1}" value="${set.reps}" data-action="log-reps" data-ei="${ei}" data-si="${si}" placeholder="rip."><input type="checkbox" aria-label="Completa serie ${si+1}" data-action="complete-set" data-ei="${ei}" data-si="${si}" ${set.done?"checked":""}></div>`).join("")}</div>${isRest?`<div class="rest-box"><div><span>RECUPERO IN CORSO</span><strong id="restCountdown">${formatTime(Math.max(0,Math.ceil((s.restEndsAt-Date.now())/1000)))}</strong></div><div class="rest-actions"><button data-action="add-rest">+15s</button><button data-action="skip-rest">Salta</button></div></div>`:""}<div class="card-actions"><button class="secondary" data-action="session-add-set" data-index="${ei}">+ Serie</button><button class="secondary" data-action="session-add-exercise">+ Esercizio</button><button class="secondary" data-action="session-delete" data-index="${ei}">Elimina</button></div></article>`;
+      return `<article class="exercise-card session-exercise reorder-card ${isRest?"active-rest":""}" data-reorder-index="${ei}"><div class="card-head"><button class="drag-handle" type="button" aria-label="Trascina per riordinare" title="Trascina per riordinare">⠿</button><div class="reorder-title"><div class="muscle">${escapeHTML(e.muscle)}</div><p class="card-title" style="margin-top:6px">${escapeHTML(e.name)}</p><div class="muted">${done}/${e.setsLog.length} serie completate · Recupero ${e.rest}s ${e.unilateral?"· unilaterale":""} ${e.circuit?"· circuito":""}</div></div><div class="session-reorder-actions"><button class="secondary" data-action="move-session-up" data-index="${ei}" ${ei===0?"disabled":""} aria-label="Sposta sopra">↑</button><button class="secondary" data-action="move-session-down" data-index="${ei}" ${ei===s.exercises.length-1?"disabled":""} aria-label="Sposta sotto">↓</button><button class="secondary" data-action="session-edit" data-index="${ei}">Modifica</button></div></div><div class="set-list">${e.setsLog.map((set,si)=>`<div class="set-row"><span class="set-number">S${si+1}</span><input type="number" min="0" step="0.5" aria-label="Kg serie ${si+1}" value="${set.weight}" data-action="log-weight" data-ei="${ei}" data-si="${si}" placeholder="kg"><input type="number" min="1" step="1" aria-label="Ripetizioni serie ${si+1}" value="${set.reps}" data-action="log-reps" data-ei="${ei}" data-si="${si}" placeholder="rip."><input type="checkbox" aria-label="Completa serie ${si+1}" data-action="complete-set" data-ei="${ei}" data-si="${si}" ${set.done?"checked":""}></div>`).join("")}</div>${isRest?`<div class="rest-box"><div><span>RECUPERO IN CORSO</span><strong id="restCountdown">${formatTime(Math.max(0,Math.ceil((s.restEndsAt-Date.now())/1000)))}</strong></div><div class="rest-actions"><button data-action="add-rest">+15s</button><button data-action="skip-rest">Salta</button></div></div>`:""}<div class="card-actions"><button class="secondary" data-action="session-add-set" data-index="${ei}">+ Serie</button><button class="secondary" data-action="session-add-exercise">+ Esercizio</button><button class="secondary" data-action="session-delete" data-index="${ei}">Elimina</button></div></article>`;
     }).join("");
     const allDone=s.exercises.every(e=>e.setsLog.every(x=>x.done));
     $("#sessionFooter").innerHTML=`<p>${allDone?(s.restEndsAt?"Ultimo recupero in corso.":"Tutte le serie sono completate."):"Completa le serie: il recupero partirà automaticamente."}</p><div class="sound-tools"><button class="secondary" id="testSoundBtn" type="button">♪ Attiva e prova il suono</button><span class="muted" id="soundStatus">Prova il suono prima di iniziare.</span></div>${allDone&&!s.restEndsAt?'<button class="primary full" id="finishCompleted" style="margin-top:12px">Termina e salva allenamento</button>':""}`;
@@ -276,29 +276,29 @@
   function openStoryGraphic(r){
     storyRecord=r;storyPhoto=null;storyTemplate="photo";
     storyStickers = [
-      {id:"title",label:"Titolo",x:38,y:100,w:464,h:110,kind:"title"},
-      {id:"duration",label:"Durata",x:34,y:545,w:220,h:112,kind:"stat",stat:"DURATA"},
-      {id:"volume",label:"Volume",x:286,y:545,w:220,h:112,kind:"stat",stat:"VOLUME"},
-      {id:"sets",label:"Serie",x:34,y:675,w:220,h:112,kind:"stat",stat:"SERIE"},
-      {id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,kind:"stat",stat:"RIPETIZIONI"}
+      {id:"title",label:"Titolo",x:38,y:100,w:464,h:110,baseW:464,baseH:110,kind:"title"},
+      {id:"duration",label:"Durata",x:34,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"DURATA"},
+      {id:"volume",label:"Volume",x:286,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"VOLUME"},
+      {id:"sets",label:"Serie",x:34,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"SERIE"},
+      {id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"RIPETIZIONI"}
     ];
     selectedSticker=0;
-    openModal(`<div class="eyebrow">GYMBRO SOCIAL STUDIO</div><h2 id="modalTitle">Il tuo allenamento, da condividere.</h2><p class="muted">Aggiungi una foto come sfondo: non verrà coperta da un pannello scuro. Gli adesivi con statistiche sono sovrapposti alla foto: trascinali per posizionarli e usa l'angolo in basso a destra per ridimensionarli.</p><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima con adesivi spostabili e ridimensionabili"></canvas><div class="story-controls"><label class="secondary story-file-label">＋ Foto di sfondo <input id="storyPhotoInput" type="file" accept="image/*" hidden></label><label class="story-template-label">Stile adesivi <select id="storyTemplate"><option value="photo">Adesivi traslucidi</option><option value="lime">Adesivi lime</option></select></label></div><div class="story-sticker-tools"><span class="muted">Adesivo selezionato:</span><select id="stickerSelect" aria-label="Seleziona adesivo"><option value="0">Titolo</option><option value="1">Durata</option><option value="2">Volume</option><option value="3">Serie</option><option value="4">Ripetizioni</option></select><button class="secondary" id="resetStickers" type="button">Ripristina posizione</button></div><div class="stack" style="margin-top:12px"><button class="primary full" id="shareStoryImage">Condividi immagine ↗</button><button class="secondary full" id="downloadStoryImage">Salva immagine PNG</button><p class="muted">Su iPhone, “Condividi immagine” apre il menu di condivisione se Safari supporta la condivisione dei file. Se Instagram è installato e compare nel menu, selezionalo; altrimenti salva l'immagine e caricala da Instagram.</p></div>`);
+    openModal(`<div class="eyebrow">GYMBRO SOCIAL STUDIO</div><h2 id="modalTitle">Il tuo allenamento, da condividere.</h2><p class="muted">Aggiungi una foto come sfondo. Le statistiche sono adesivi di solo testo: niente riquadri opachi e nessun filtro sulla foto. Trascina un adesivo per spostarlo e trascina il punto verde in basso a destra per ridimensionare solo quel testo.</p><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima con adesivi spostabili e ridimensionabili"></canvas><div class="story-controls"><label class="secondary story-file-label">＋ Foto di sfondo <input id="storyPhotoInput" type="file" accept="image/*" hidden></label><label class="story-template-label">Stile adesivi <select id="storyTemplate"><option value="photo">Adesivi traslucidi</option><option value="lime">Adesivi lime</option></select></label></div><div class="story-sticker-tools"><span class="muted">Adesivo selezionato:</span><select id="stickerSelect" aria-label="Seleziona adesivo"><option value="0">Titolo</option><option value="1">Durata</option><option value="2">Volume</option><option value="3">Serie</option><option value="4">Ripetizioni</option></select><button class="secondary" id="resetStickers" type="button">Ripristina posizione</button></div><div class="stack" style="margin-top:12px"><button class="primary full" id="shareStoryImage">Condividi immagine ↗</button><button class="secondary full" id="downloadStoryImage">Salva immagine PNG</button><p class="muted">Su iPhone, “Condividi immagine” apre il menu di condivisione se Safari supporta la condivisione dei file. Se Instagram è installato e compare nel menu, selezionalo; altrimenti salva l'immagine e caricala da Instagram.</p></div>`);
     drawStoryGraphic();
     $("#storyPhotoInput").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{storyPhoto=await loadImage(URL.createObjectURL(f));drawStoryGraphic();}catch{showToast("Non riesco a leggere questa foto.");}});
     $("#storyTemplate").addEventListener("change",e=>{storyTemplate=e.target.value;drawStoryGraphic();});
     $("#stickerSelect").addEventListener("change",e=>{selectedSticker=Number(e.target.value)||0;drawStoryGraphic();});
-    $("#resetStickers").addEventListener("click",()=>{storyStickers[0]={id:"title",label:"Titolo",x:38,y:100,w:464,h:110,kind:"title"};storyStickers[1]={id:"duration",label:"Durata",x:34,y:545,w:220,h:112,kind:"stat",stat:"DURATA"};storyStickers[2]={id:"volume",label:"Volume",x:286,y:545,w:220,h:112,kind:"stat",stat:"VOLUME"};storyStickers[3]={id:"sets",label:"Serie",x:34,y:675,w:220,h:112,kind:"stat",stat:"SERIE"};storyStickers[4]={id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,kind:"stat",stat:"RIPETIZIONI"};drawStoryGraphic();});
+    $("#resetStickers").addEventListener("click",()=>{storyStickers[0]={id:"title",label:"Titolo",x:38,y:100,w:464,h:110,baseW:464,baseH:110,kind:"title"};storyStickers[1]={id:"duration",label:"Durata",x:34,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"DURATA"};storyStickers[2]={id:"volume",label:"Volume",x:286,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"VOLUME"};storyStickers[3]={id:"sets",label:"Serie",x:34,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"SERIE"};storyStickers[4]={id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"RIPETIZIONI"};drawStoryGraphic();});
     const sc=$("#storyCanvas");let dragSticker=null,dragMode="move",dragStart=null;
     sc.addEventListener("pointerdown",e=>{const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height;let idx=-1;for(let i=storyStickers.length-1;i>=0;i--){const st=storyStickers[i];if(x>=st.x&&x<=st.x+st.w&&y>=st.y&&y<=st.y+st.h){idx=i;break;}}if(idx<0)return;selectedSticker=idx;$("#stickerSelect").value=String(idx);dragSticker=idx;const st=storyStickers[idx];dragMode=(x>st.x+st.w-34&&y>st.y+st.h-34)?"resize":"move";dragStart={x,y,sx:st.x,sy:st.y,sw:st.w,sh:st.h};sc.setPointerCapture(e.pointerId);drawStoryGraphic();e.preventDefault();});
-    sc.addEventListener("pointermove",e=>{if(dragSticker===null||!dragStart)return;const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height,st=storyStickers[dragSticker];if(dragMode==="move"){st.x=Math.max(0,Math.min(sc.width-st.w,dragStart.sx+x-dragStart.x));st.y=Math.max(0,Math.min(sc.height-st.h,dragStart.sy+y-dragStart.y));}else{st.w=Math.max(120,Math.min(sc.width-st.x,dragStart.sw+x-dragStart.x));st.h=Math.max(76,Math.min(sc.height-st.y,dragStart.sh+y-dragStart.y));}drawStoryGraphic();e.preventDefault();});
+    sc.addEventListener("pointermove",e=>{if(dragSticker===null||!dragStart)return;const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height,st=storyStickers[dragSticker];if(dragMode==="move"){st.x=Math.max(0,Math.min(sc.width-st.w,dragStart.sx+x-dragStart.x));st.y=Math.max(0,Math.min(sc.height-st.h,dragStart.sy+y-dragStart.y));}else{st.w=Math.max(70,Math.min(sc.width-st.x,dragStart.sw+x-dragStart.x));st.h=Math.max(38,Math.min(sc.height-st.y,dragStart.sh+y-dragStart.y));}drawStoryGraphic();e.preventDefault();});
     const endDrag=()=>{dragSticker=null;dragStart=null;};sc.addEventListener("pointerup",endDrag);sc.addEventListener("pointercancel",endDrag);
     $("#shareStoryImage").addEventListener("click",shareStoryImage);
     $("#downloadStoryImage").addEventListener("click",downloadStoryImage);
   }
   function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src;});}
-  function drawStoryGraphic(){
-    const canvas=$("#storyCanvas");if(!canvas||!storyRecord)return;
+  function drawStoryGraphic(showHandles=true,targetCanvas=null){
+    const canvas=targetCanvas||$("#storyCanvas");if(!canvas||!storyRecord)return;
     const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,r=storyRecord;
     ctx.clearRect(0,0,w,h);
     if(storyPhoto){
@@ -306,40 +306,40 @@
       ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);
     } else {
       const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#26321a");g.addColorStop(.5,"#171a1c");g.addColorStop(1,"#090b0c");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-      ctx.fillStyle="rgba(255,255,255,.18)";ctx.font="bold 23px Arial";ctx.fillText("AGGIUNGI UNA FOTO DI SFONDO",36,480);
+      if(showHandles){ctx.fillStyle="rgba(255,255,255,.85)";ctx.font="bold 23px Arial";ctx.fillText("AGGIUNGI UNA FOTO DI SFONDO",36,480);}
     }
-    const lime="#c3ff3d",white="#ffffff",muted="#f0f0f0";
-    const values={
-      DURATA:formatTime(r.duration),
-      VOLUME:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,
-      SERIE:`${r.setsCompleted}/${r.setsPlanned}`,
-      RIPETIZIONI:String(r.reps)
-    };
+    const lime="#c3ff3d",white="#ffffff";
+    const values={DURATA:formatTime(r.duration),VOLUME:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,SERIE:`${r.setsCompleted}/${r.setsPlanned}`,RIPETIZIONI:String(r.reps)};
     storyStickers.forEach((st,i)=>{
-      const selected=i===selectedSticker;
+      const selected=showHandles&&i===selectedSticker;
+      const sx=st.w/(st.baseW||st.w),sy=st.h/(st.baseH||st.h);
+      ctx.save();
       if(st.kind==="title"){
-        ctx.fillStyle=storyTemplate==="lime"?"rgba(9,12,10,.78)":"rgba(12,14,14,.40)";
-        roundRect(ctx,st.x,st.y,st.w,st.h,22);ctx.fill();
-        ctx.strokeStyle=selected?lime:"rgba(255,255,255,.72)";ctx.lineWidth=selected?3:1.5;ctx.stroke();
-        ctx.fillStyle=lime;ctx.font="bold 19px Arial";ctx.fillText("GYMBRO  /  ALLENAMENTO",st.x+20,st.y+31);
-        ctx.fillStyle=white;ctx.font="bold 30px Arial";wrapCanvasText(ctx,r.planName||"Il mio allenamento",st.x+20,st.y+72,st.w-40,34,1);
-      } else {
-        ctx.fillStyle=storyTemplate==="lime"?"rgba(10,13,10,.82)":"rgba(12,14,14,.46)";
-        roundRect(ctx,st.x,st.y,st.w,st.h,20);ctx.fill();
-        ctx.strokeStyle=selected?lime:"rgba(255,255,255,.82)";ctx.lineWidth=selected?3:1.5;ctx.stroke();
-        ctx.fillStyle=storyTemplate==="lime"?lime:white;ctx.font="bold 15px Arial";ctx.fillText(st.stat,st.x+16,st.y+30);
-        ctx.fillStyle=white;ctx.font=`bold ${String(values[st.stat]).length>10?22:29}px Arial`;ctx.fillText(values[st.stat],st.x+16,st.y+72);
+        ctx.shadowColor="rgba(0,0,0,.78)";ctx.shadowBlur=8;ctx.shadowOffsetY=2;
+        ctx.fillStyle=lime;ctx.font=`bold ${Math.max(10,Math.min(26,19*sx))}px Arial`;
+        ctx.fillText("GYMBRO / ALLENAMENTO",st.x,st.y+Math.max(18,28*sy));
+        ctx.fillStyle=white;ctx.font=`bold ${Math.max(12,Math.min(52,30*Math.min(sx,sy)))}px Arial`;
+        wrapCanvasText(ctx,r.planName||"Il mio allenamento",st.x,st.y+Math.max(48,67*sy),st.w,Math.max(18,34*sy),1);
+      }else{
+        ctx.shadowColor="rgba(0,0,0,.85)";ctx.shadowBlur=8;ctx.shadowOffsetY=2;
+        ctx.fillStyle=storyTemplate==="lime"?lime:white;ctx.font=`bold ${Math.max(9,Math.min(30,15*sx))}px Arial`;
+        ctx.fillText(st.stat,st.x,st.y+Math.max(15,28*sy));
+        ctx.fillStyle=white;ctx.font=`bold ${Math.max(12,Math.min(64,(String(values[st.stat]).length>10?22:29)*Math.min(sx,sy)))}px Arial`;
+        ctx.fillText(values[st.stat],st.x,st.y+Math.max(38,67*sy));
       }
+      ctx.restore();
+      // Editor-only selection boundary and resize handle; excluded from exported PNG.
       if(selected){
-        ctx.fillStyle=lime;ctx.beginPath();ctx.arc(st.x+st.w-10,st.y+st.h-10,13,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle="#101310";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(st.x+st.w-17,st.y+st.h-3);ctx.lineTo(st.x+st.w-3,st.y+st.h-17);ctx.stroke();
+        ctx.save();ctx.strokeStyle=lime;ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.strokeRect(st.x,st.y,st.w,st.h);ctx.setLineDash([]);
+        ctx.fillStyle=lime;ctx.beginPath();ctx.arc(st.x+st.w-10,st.y+st.h-10,14,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle="#101310";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(st.x+st.w-17,st.y+st.h-3);ctx.lineTo(st.x+st.w-3,st.y+st.h-17);ctx.stroke();ctx.restore();
       }
     });
-    ctx.fillStyle="rgba(255,255,255,.92)";ctx.font="bold 14px Arial";ctx.fillText("TRACCIA. SPINGI. MIGLIORA.",28,h-26);
+    if(showHandles){ctx.fillStyle="rgba(255,255,255,.96)";ctx.font="bold 14px Arial";ctx.shadowColor="rgba(0,0,0,.8)";ctx.shadowBlur=5;ctx.fillText("TRACCIA. SPINGI. MIGLIORA.",28,h-26);ctx.shadowBlur=0;}
   }
   function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines=2){let line="",lines=[];for(const word of String(text).split(/\s+/)){const test=line?line+" "+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word;}else line=test;}if(line)lines.push(line);lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));}
   function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-  function storyBlob(){return new Promise((resolve,reject)=>$("#storyCanvas").toBlob(b=>b?resolve(b):reject(new Error("PNG non disponibile")),"image/png"));}
+  function storyBlob(){return new Promise((resolve,reject)=>{const out=document.createElement("canvas");out.width=540;out.height=960;drawStoryGraphic(false,out);out.toBlob(b=>b?resolve(b):reject(new Error("PNG non disponibile")),"image/png");});}
   async function shareStoryImage(){try{const blob=await storyBlob(),file=new File([blob],"gymbro-allenamento.png",{type:"image/png"});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:"Il mio allenamento GymBro",text:"Traccia. Spingi. Migliora. 💚",files:[file]});}else{downloadBlob(blob);showToast("Immagine salvata: apri Instagram e aggiungila alla Storia.");}}catch(e){if(e.name!=="AbortError")showToast("Condivisione non disponibile: prova Salva immagine PNG.");}}
   async function downloadStoryImage(){try{downloadBlob(await storyBlob());showToast("Grafica PNG pronta. Su iPhone controlla Download in File.");}catch{showToast("Non è stato possibile creare l'immagine.");}}
   function downloadBlob(blob){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="gymbro-allenamento.png";a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);}
@@ -352,6 +352,8 @@
   function formatTime(sec){sec=Math.max(0,Math.floor(Number(sec)||0));const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;return h?`${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;}
   function escapeHTML(str){return String(str??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   function addSet(ei){const e=state.session?.exercises[ei];if(!e)return;e.setsLog.push({done:false,weight:Number(e.weight)||0,reps:Number(e.reps)||1});persist();renderSession();}
+  function moveSessionExercise(from,to){const s=state.session;if(!s||from<0||to<0||from>=s.exercises.length||to>=s.exercises.length||from===to)return;const [item]=s.exercises.splice(from,1);s.exercises.splice(to,0,item);const plan=state.plans.find(p=>p.id===s.planId);if(plan){const byId=new Map(plan.exercises.map(e=>[e.id,e]));const ordered=s.exercises.map(e=>byId.get(e.id)).filter(Boolean);plan.exercises=[...ordered,...plan.exercises.filter(e=>!ordered.some(x=>x.id===e.id))];}persist();renderSession();}
+  function reorderByPointer(container, getList, render){let from=null;container.addEventListener("pointerdown",e=>{const grip=e.target.closest(".drag-handle");if(!grip)return;const card=grip.closest("[data-reorder-index]");if(!card)return;from=Number(card.dataset.reorderIndex);grip.setPointerCapture?.(e.pointerId);e.preventDefault();});container.addEventListener("pointerup",e=>{if(from===null)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-reorder-index]");const to=target?Number(target.dataset.reorderIndex):from;const list=getList();if(target&&to!==from&&list[from]!==undefined){const [item]=list.splice(from,1);list.splice(to,0,item);render();persist();showToast("Ordine degli esercizi aggiornato.");}from=null;});container.addEventListener("pointercancel",()=>{from=null;});}
   function deleteSessionExercise(ei){const s=state.session;if(!s)return;if(!confirm(`Eliminare ${s.exercises[ei].name} dalla sessione?`))return;s.exercises.splice(ei,1);persist();renderSession();}
   function handleAction(target){
     const action=target.dataset.action;if(!action)return;
@@ -367,6 +369,8 @@
       case "move-editor-up":if(index>0){[editorExerciseIds[index-1],editorExerciseIds[index]]=[editorExerciseIds[index],editorExerciseIds[index-1]];renderEditorExercises();}break;
       case "move-editor-down":if(index<editorExerciseIds.length-1){[editorExerciseIds[index+1],editorExerciseIds[index]]=[editorExerciseIds[index],editorExerciseIds[index+1]];renderEditorExercises();}break;
       case "remove-editor-exercise":editorExerciseIds.splice(index,1);renderEditorExercises();break;
+      case "move-session-up":moveSessionExercise(index,index-1);break;
+      case "move-session-down":moveSessionExercise(index,index+1);break;
       case "session-edit":sessionEdit(index);break;
       case "session-add-set":addSet(index);break;
       case "session-add-exercise":addExerciseDuringSession();break;
@@ -378,6 +382,8 @@
     }
   }
   function bind(){
+    reorderByPointer($("#editorExercises"),()=>editorExerciseIds,renderEditorExercises);
+    reorderByPointer($("#sessionExercises"),()=>state.session?.exercises||[],renderSession);
     $$(".nav-item").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
     $$("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
     $("#profileBtn").addEventListener("click",()=>go("setupView"));
