@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111315">
+  <meta name="description" content="GymBro — traccia, spingi, migliora.">
+  <title>GymBro — Your Gym. Your Rules.</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="GymBro home"><span class="brand-mark">G</span><span>Gym<span class="lime">Bro</span><small>YOUR GYM. YOUR RULES.</small></span></a>
+      <button class="icon-button" id="profileBtn" aria-label="Profilo">●</button>
+    </header>
+
+    <main>
+      <section id="homeView" class="view active">
+        <div class="hero">
+          <div class="eyebrow">IL TUO ALLENAMENTO, LA TUA REGOLA</div>
+          <h1>Traccia.<br><span class="lime">Spingi.</span> Migliora.</h1>
+          <p>Ogni serie conta. Ogni progresso è tuo.</p>
+          <button class="primary" id="startFromHome">Apri allenamento <span>↗</span></button>
+        </div>
+        <div class="section-heading"><div><span class="eyebrow">IL TUO SPAZIO</span><h2>Pronto a spingere?</h2></div><span class="pill" id="planCount">0 schede</span></div>
+        <div class="stats-grid">
+          <article class="stat-card"><span>ALLENAMENTI</span><strong id="statWorkouts">0</strong><small>sessioni salvate</small></article>
+          <article class="stat-card"><span>VOLUME TOTALE</span><strong id="statVolume">0 <i>kg</i></strong><small>carico × ripetizioni</small></article>
+        </div>
+        <div class="section-heading"><div><span class="eyebrow">IL TUO PERCORSO</span><h2>Le tue schede</h2></div><button class="text-button" data-go="plansView">Vedi tutte →</button></div>
+        <div id="homePlans" class="stack"></div>
+      </section>
+
+      <section id="setupView" class="view">
+        <div class="eyebrow">PERSONALIZZA GYMBRO</div><h1>Costruiamo il tuo<br><span class="lime">percorso.</span></h1>
+        <form id="profileForm" class="panel form-grid">
+          <label>Nome <input name="name" placeholder="Come ti chiami?" maxlength="32"></label>
+          <label>Obiettivo <select name="goal"><option value="hypertrophy">Aumentare la massa</option><option value="strength">Aumentare la forza</option><option value="endurance">Aumentare la resistenza</option><option value="general">Fitness generale</option></select></label>
+          <label>Esperienza <select name="level"><option value="beginner">Principiante</option><option value="intermediate">Intermedio</option><option value="advanced">Avanzato</option></select></label>
+          <label>Giorni a settimana <select name="days"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label>
+          <fieldset><legend>Attrezzatura disponibile</legend><div class="check-grid">
+            <label><input type="checkbox" name="equipment" value="dumbbell" checked> Manubri</label>
+            <label><input type="checkbox" name="equipment" value="barbell" checked> Bilanciere</label>
+            <label><input type="checkbox" name="equipment" value="machine" checked> Macchinari</label>
+            <label><input type="checkbox" name="equipment" value="cable" checked> Cavi</label>
+            <label><input type="checkbox" name="equipment" value="bodyweight" checked> Corpo libero</label>
+            <label><input type="checkbox" name="equipment" value="band"> Elastici</label>
+          </div></fieldset>
+          <button class="primary full" type="submit">Salva profilo</button>
+        </form>
+      </section>
+
+      <section id="plansView" class="view">
+        <div class="section-heading"><div><span class="eyebrow">PROGRAMMA</span><h1>Le tue <span class="lime">schede.</span></h1></div><button class="primary compact" id="newPlanBtn">+ Crea</button></div>
+        <div class="panel" id="planEditor" hidden>
+          <h2 id="editorTitle">Nuova scheda</h2>
+          <label>Nome scheda <input id="planName" placeholder="Es. Upper body"></label>
+          <label>Obiettivo <select id="planGoal"><option value="hypertrophy">Ipertrofia</option><option value="strength">Forza</option><option value="endurance">Resistenza</option></select></label>
+          <div class="section-heading small-heading"><h3>Esercizi</h3><button class="text-button" id="addExerciseBtn" type="button">+ Aggiungi</button></div>
+          <div id="editorExercises" class="stack"></div>
+          <div class="button-row"><button class="secondary" id="cancelPlanBtn">Annulla</button><button class="primary" id="savePlanBtn">Salva scheda</button></div>
+        </div>
+        <div id="plansList" class="stack"></div>
+      </section>
+
+      <section id="libraryView" class="view">
+        <div class="eyebrow">ARCHIVIO MOVIMENTI</div><h1>Trova il tuo<br><span class="lime">prossimo esercizio.</span></h1>
+        <div class="filters panel">
+          <label>Cerca <input id="exerciseSearch" placeholder="Es. squat, petto..."></label>
+          <label>Muscolo <select id="muscleFilter"><option value="">Tutti i muscoli</option><option value="Petto">Petto</option><option value="Schiena">Schiena</option><option value="Spalle">Spalle</option><option value="Bicipiti">Bicipiti</option><option value="Tricipiti">Tricipiti</option><option value="Gambe">Gambe</option><option value="Addome">Addome</option></select></label>
+          <label>Attrezzatura <select id="equipmentFilter"><option value="">Tutta</option><option value="dumbbell">Manubri</option><option value="barbell">Bilanciere</option><option value="machine">Macchinari</option><option value="cable">Cavi</option><option value="bodyweight">Corpo libero</option><option value="band">Elastici</option></select></label>
+        </div>
+        <div id="libraryList" class="stack"></div>
+      </section>
+
+      <section id="sessionView" class="view">
+        <div class="session-top">
+          <div><span class="eyebrow">TEMPO ALLENAMENTO</span><strong id="elapsed">00:00</strong></div>
+          <button class="danger-button" id="finishEarly">Termina allenamento</button>
+        </div>
+        <div class="eyebrow" id="sessionPlanLabel">SESSIONE ATTIVA</div><h1 id="sessionTitle">Allenamento</h1>
+        <div class="session-meta" id="sessionMeta"></div>
+        <div id="sessionExercises" class="stack"></div>
+        <div class="panel session-footer" id="sessionFooter"><p>Completa le serie. Il recupero parte automaticamente.</p></div>
+      </section>
+
+      <section id="historyView" class="view">
+        <div class="eyebrow">COSTANZA E PROGRESSI</div><h1>Il lavoro<br><span class="lime">si vede.</span></h1>
+        <div id="historyList" class="stack"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navigazione principale">
+      <button class="nav-item active" data-view="homeView"><span>⌂</span>Home</button>
+      <button class="nav-item" data-view="plansView"><span>▤</span>Schede</button>
+      <button class="nav-item" data-view="libraryView"><span>＋</span>Esercizi</button>
+      <button class="nav-item" data-view="historyView"><span>↗</span>Progressi</button>
+    </nav>
+  </div>
+  <div id="modal" class="modal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button class="modal-close" id="modalClose" aria-label="Chiudi">×</button><div id="modalContent"></div></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

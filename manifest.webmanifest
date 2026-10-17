@@ -1,0 +1,12 @@
+{
+  "name": "GymBro — Your Gym. Your Rules.",
+  "short_name": "GymBro",
+  "description": "Traccia. Spingi. Migliora.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101214",
+  "theme_color": "#101214",
+  "lang": "it",
+  "icons": [{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
