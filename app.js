@@ -24,7 +24,14 @@
     {id:"plank",name:"Plank",muscle:"Addome",secondary:"Core",equipment:"bodyweight",level:"Principiante",sets:3,reps:30,rest:45,unilateral:false,isTime:true},
     {id:"crunch",name:"Crunch",muscle:"Addome",secondary:"",equipment:"bodyweight",level:"Principiante",sets:3,reps:15,rest:45,unilateral:false},
     {id:"cable-crunch",name:"Crunch ai cavi",muscle:"Addome",secondary:"",equipment:"cable",level:"Intermedio",sets:3,reps:12,rest:60,unilateral:false},
-    {id:"band-pull",name:"Aperture con elastico",muscle:"Spalle",secondary:"Schiena",equipment:"band",level:"Principiante",sets:3,reps:15,rest:45,unilateral:false}
+    {id:"band-pull",name:"Aperture con elastico",muscle:"Spalle",secondary:"Schiena",equipment:"band",level:"Principiante",sets:3,reps:15,rest:45,unilateral:false},
+    {id:"hip-thrust",name:"Hip thrust",muscle:"Glutei",secondary:"Femorali",equipment:"barbell",level:"Intermedio",sets:3,reps:10,rest:90,unilateral:false},
+    {id:"glute-bridge",name:"Glute bridge",muscle:"Glutei",secondary:"Addome",equipment:"bodyweight",level:"Principiante",sets:3,reps:15,rest:60,unilateral:false},
+    {id:"rdl",name:"Stacco rumeno",muscle:"Femorali",secondary:"Glutei, schiena",equipment:"dumbbell",level:"Intermedio",sets:3,reps:10,rest:90,unilateral:false},
+    {id:"leg-extension",name:"Leg extension",muscle:"Quadricipiti",secondary:"",equipment:"machine",level:"Principiante",sets:3,reps:12,rest:75,unilateral:false},
+    {id:"calf-machine",name:"Calf alla macchina",muscle:"Polpacci",secondary:"",equipment:"machine",level:"Principiante",sets:3,reps:15,rest:60,unilateral:false},
+    {id:"wrist-curl",name:"Wrist curl",muscle:"Avambracci",secondary:"",equipment:"dumbbell",level:"Principiante",sets:3,reps:15,rest:45,unilateral:false},
+    {id:"dead-bug",name:"Dead bug",muscle:"Core",secondary:"Addome",equipment:"bodyweight",level:"Principiante",sets:3,reps:10,rest:45,unilateral:true}
   ];
   const freshState = () => ({
     profile:{name:"",goal:"hypertrophy",level:"beginner",days:4,equipment:["dumbbell","barbell","machine","cable","bodyweight"]},
@@ -33,6 +40,7 @@
   let state = loadState();
   let sessionInterval = null, restInterval = null, toastTimeout = null;
   let editingPlanId = null, editorExerciseIds = [];
+  let audioContext = null;
   function loadState(){
     try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)); return saved && saved.profile && saved.plans ? {...freshState(),...saved} : freshState(); }
     catch { return freshState(); }
@@ -51,8 +59,8 @@
   }
   function goalLabel(goal){ return ({hypertrophy:"Ipertrofia",strength:"Forza",endurance:"Resistenza",general:"Fitness generale"})[goal]||"Ipertrofia"; }
   function exById(id){return exercises.find(e=>e.id===id);}
-  function createPlanObject(name,goal,ids){
-    return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random(),name:name.trim(),goal,createdAt:Date.now(),exercises:ids.map(id=>{const e=exById(id);return {...e,weight:0,sets:e.sets,reps:e.reps,rest:e.rest,circuit:false,unilateral:e.unilateral};})};
+  function createPlanObject(name,goal,ids,programName="Programma personale"){
+    return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random(),name:name.trim(),programName:(programName||"Programma personale").trim(),goal,createdAt:Date.now(),exercises:ids.map(id=>{const e=exById(id);return {...e,weight:0,sets:e.sets,reps:e.reps,rest:e.rest,circuit:false,unilateral:e.unilateral};})};
   }
   function availableExercises(){const selected=state.profile.equipment||[];return exercises.filter(e=>selected.includes(e.equipment));}
   function renderHome(){
@@ -66,7 +74,7 @@
   }
   function planCardHTML(p){
     const count=p.exercises.length;
-    return `<article class="plan-card"><div class="card-head"><div><p class="card-title">${escapeHTML(p.name)}</p><div class="muted">${goalLabel(p.goal)} · ${count} esercizi</div></div><span class="tag">${count?`${p.exercises.reduce((n,e)=>n+Number(e.sets||0),0)} serie`:"Vuota"}</span></div><div class="card-actions"><button class="primary compact" data-action="start" data-id="${p.id}">Apri allenamento ↗</button><button class="secondary" data-action="edit" data-id="${p.id}">Modifica</button><button class="secondary" data-action="duplicate" data-id="${p.id}">Duplica</button><button class="secondary" data-action="delete" data-id="${p.id}">Elimina</button></div></article>`;
+    return `<article class="plan-card"><div class="card-head"><div><p class="card-title">${escapeHTML(p.name)}</p><div class="muted">${escapeHTML(p.programName||"Programma personale")} · ${goalLabel(p.goal)} · ${count} esercizi</div></div><span class="tag">${count?`${p.exercises.reduce((n,e)=>n+Number(e.sets||0),0)} serie`:"Vuota"}</span></div><div class="card-actions"><button class="primary compact" data-action="start" data-id="${p.id}">Apri allenamento ↗</button><button class="secondary" data-action="edit" data-id="${p.id}">Modifica</button><button class="secondary" data-action="duplicate" data-id="${p.id}">Duplica</button><button class="secondary" data-action="delete" data-id="${p.id}">Elimina</button></div></article>`;
   }
   function renderPlans(){
     $("#plansList").innerHTML=state.plans.length?state.plans.map(planCardHTML).join(""):'<div class="empty"><strong>Ancora nessuna scheda</strong>Crea la tua prima scheda o genera una base in base ai tuoi obiettivi.</div>';
@@ -93,7 +101,7 @@
   function openPlanEditor(plan=null){
     editingPlanId=plan?.id||null;editorExerciseIds=plan?plan.exercises.map(e=>e.id):[];
     $("#editorTitle").textContent=plan?"Modifica scheda":"Nuova scheda";
-    $("#planName").value=plan?.name||"";$("#planGoal").value=plan?.goal||state.profile.goal||"hypertrophy";
+    $("#planName").value=plan?.name||"";$("#programName").value=plan?.programName||"Programma personale";$("#planGoal").value=plan?.goal||state.profile.goal||"hypertrophy";
     $("#planEditor").hidden=false;renderEditorExercises();$("#planName").focus();
   }
   function renderEditorExercises(){
@@ -110,9 +118,9 @@
     if(editingPlanId){
       const old=state.plans.find(p=>p.id===editingPlanId);if(!old)return;
       const oldById=new Map(old.exercises.map(e=>[e.id,e]));
-      old.name=name;old.goal=$("#planGoal").value;
+      old.name=name;old.programName=$("#programName").value.trim()||"Programma personale";old.goal=$("#planGoal").value;
       old.exercises=editorExerciseIds.map(id=>oldById.get(id)||{...exById(id),weight:0,circuit:false,unilateral:exById(id).unilateral});
-    } else state.plans.push(createPlanObject(name,$("#planGoal").value,editorExerciseIds));
+    } else state.plans.push(createPlanObject(name,$("#planGoal").value,editorExerciseIds,$("#programName").value));
     persist();$("#planEditor").hidden=true;renderPlans();renderHome();showToast("Scheda salvata.");
   }
   function generatePlan(){
@@ -122,7 +130,7 @@
     const chosen=[], muscles=new Set();
     for(const e of preferred){if(!muscles.has(e.muscle)){chosen.push(e.id);muscles.add(e.muscle);}if(chosen.length>=Math.min(6,Math.max(4,Number(state.profile.days)+1)))break;}
     for(const e of preferred){if(chosen.length>=6)break;if(!chosen.includes(e.id))chosen.push(e.id);}
-    const p=createPlanObject(`${goalLabel(goal)} — Full body`,goal,chosen);
+    const p=createPlanObject(`${goalLabel(goal)} — Full body`,goal,chosen,"Programma personale");
     state.plans.push(p);persist();renderPlans();renderHome();showToast("Scheda generata: puoi modificarla prima dell'allenamento.");
   }
   function startSession(planId){
@@ -146,7 +154,7 @@
       return `<article class="exercise-card session-exercise ${isRest?"active-rest":""}"><div class="card-head"><div><div class="muscle">${escapeHTML(e.muscle)}</div><p class="card-title" style="margin-top:6px">${escapeHTML(e.name)}</p><div class="muted">${done}/${e.setsLog.length} serie completate · Recupero ${e.rest}s ${e.unilateral?"· unilaterale":""} ${e.circuit?"· circuito":""}</div></div><button class="secondary" data-action="session-edit" data-index="${ei}">Modifica</button></div><div class="set-list">${e.setsLog.map((set,si)=>`<div class="set-row"><span class="set-number">S${si+1}</span><input type="number" min="0" step="0.5" aria-label="Kg serie ${si+1}" value="${set.weight}" data-action="log-weight" data-ei="${ei}" data-si="${si}" placeholder="kg"><input type="number" min="1" step="1" aria-label="Ripetizioni serie ${si+1}" value="${set.reps}" data-action="log-reps" data-ei="${ei}" data-si="${si}" placeholder="rip."><input type="checkbox" aria-label="Completa serie ${si+1}" data-action="complete-set" data-ei="${ei}" data-si="${si}" ${set.done?"checked":""}></div>`).join("")}</div>${isRest?`<div class="rest-box"><div><span>RECUPERO IN CORSO</span><strong id="restCountdown">${formatTime(Math.max(0,Math.ceil((s.restEndsAt-Date.now())/1000)))}</strong></div><div class="rest-actions"><button data-action="add-rest">+15s</button><button data-action="skip-rest">Salta</button></div></div>`:""}<div class="card-actions"><button class="secondary" data-action="session-add-set" data-index="${ei}">+ Serie</button><button class="secondary" data-action="session-add-exercise">+ Esercizio</button><button class="secondary" data-action="session-delete" data-index="${ei}">Elimina</button></div></article>`;
     }).join("");
     const allDone=s.exercises.every(e=>e.setsLog.every(x=>x.done));
-    $("#sessionFooter").innerHTML=allDone&&!s.restEndsAt?'<p>Tutte le serie sono completate.</p><button class="primary full" id="finishCompleted" style="margin-top:12px">Termina e salva allenamento</button>':`<p>${allDone?"Ultimo recupero in corso.":"Completa le serie: il recupero partirà automaticamente."}</p>`;
+    $("#sessionFooter").innerHTML=`<p>${allDone?(s.restEndsAt?"Ultimo recupero in corso.":"Tutte le serie sono completate."):"Completa le serie: il recupero partirà automaticamente."}</p><div class="sound-tools"><button class="secondary" id="testSoundBtn" type="button">♪ Attiva e prova il suono</button><span class="muted" id="soundStatus">Prova il suono prima di iniziare.</span></div>${allDone&&!s.restEndsAt?'<button class="primary full" id="finishCompleted" style="margin-top:12px">Termina e salva allenamento</button>':""}`;
     if(s.restEndsAt) startRestClock(); else clearInterval(restInterval);
   }
   function allSetsDone(s){return s.exercises.length>0&&s.exercises.every(e=>e.setsLog.length>0&&e.setsLog.every(set=>set.done));}
@@ -163,38 +171,38 @@
       if(remaining<=0){clearInterval(restInterval);s.restEndsAt=null;s.restExerciseId=null;persist();playBeep();renderSession();showToast("Recupero terminato. Si riparte!");}
     },250);
   }
-  // iOS Safari richiede che l'AudioContext venga sbloccato durante un gesto dell'utente.
-  let gymBroAudioContext = null;
-  async function unlockWorkoutAudio(){
-    try {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      if (!gymBroAudioContext) gymBroAudioContext = new Ctx();
-      if (gymBroAudioContext.state === "suspended") await gymBroAudioContext.resume();
-      // Un campione quasi silenzioso sblocca l'uscita audio su alcuni browser mobile.
-      const buffer = gymBroAudioContext.createBuffer(1, 1, gymBroAudioContext.sampleRate);
-      const source = gymBroAudioContext.createBufferSource();
-      source.buffer = buffer; source.connect(gymBroAudioContext.destination); source.start(0);
-    } catch (e) { console.warn("Audio non disponibile", e); }
+  async function unlockAudio(){
+    const Ctx=window.AudioContext||window.webkitAudioContext;
+    if(!Ctx){showToast("Questo browser non supporta l'audio Web.");return false;}
+    try{
+      if(!audioContext) audioContext=new Ctx();
+      if(audioContext.state==="suspended") await audioContext.resume();
+      // Tiny silent oscillator, created directly from a user gesture, helps unlock iOS Safari audio.
+      const osc=audioContext.createOscillator(), gain=audioContext.createGain();
+      gain.gain.value=0;osc.connect(gain);gain.connect(audioContext.destination);osc.start();osc.stop(audioContext.currentTime+0.02);
+      return audioContext.state==="running";
+    }catch(e){console.warn("Impossibile attivare audio",e);return false;}
   }
   async function playBeep(){
-    try {
-      await unlockWorkoutAudio();
-      const ctx = gymBroAudioContext;
-      if (ctx && ctx.state === "running") {
-        [0, 0.22, 0.44].forEach((offset) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine"; osc.frequency.value = 880;
-          gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
-          gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + offset + 0.025);
-          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.18);
-          osc.connect(gain); gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + offset); osc.stop(ctx.currentTime + offset + 0.19);
+    try{
+      const ready=await unlockAudio();
+      if(ready&&audioContext){
+        [0,0.32,0.64].forEach((offset,i)=>{
+          const osc=audioContext.createOscillator(),gain=audioContext.createGain();
+          osc.type="sine";osc.frequency.value=i===1?1046:880;gain.gain.setValueAtTime(0.0001,audioContext.currentTime+offset);gain.gain.exponentialRampToValueAtTime(0.16,audioContext.currentTime+offset+0.025);gain.gain.exponentialRampToValueAtTime(0.0001,audioContext.currentTime+offset+0.20);
+          osc.connect(gain);gain.connect(audioContext.destination);osc.start(audioContext.currentTime+offset);osc.stop(audioContext.currentTime+offset+0.22);
         });
       }
-    } catch (e) { console.warn("Suono di recupero non riprodotto", e); }
-    try { if ("vibrate" in navigator) navigator.vibrate([180, 100, 180]); } catch (_) {}
+    }catch(e){console.warn("Audio non disponibile",e);}
+    if("vibrate" in navigator){try{navigator.vibrate([150,80,150]);}catch{}}
+  }
+  async function testSound(){
+    const status=$("#soundStatus");
+    const ready=await unlockAudio();
+    if(!ready){if(status)status.textContent="Audio non attivato dal browser. Riprova toccando il pulsante.";showToast("Safari non ha attivato l'audio: riprova con questo pulsante.");return;}
+    await playBeep();
+    if(status)status.textContent="Segnale inviato. Se non lo senti, prova a chiudere e riaprire la pagina.";
+    showToast("Test audio avviato.");
   }
   function completeSet(ei,si,checked){
     const s=state.session;if(!s)return;const e=s.exercises[ei],set=e?.setsLog[si];if(!e||!set)return;
@@ -272,9 +280,6 @@
     }
   }
   function bind(){
-    // Sblocca l'audio al primo tocco/click dell'utente, prima che scada il recupero.
-    document.addEventListener("pointerdown", () => { unlockWorkoutAudio(); }, { once: true, passive: true });
-    document.addEventListener("touchstart", () => { unlockWorkoutAudio(); }, { once: true, passive: true });
     $$(".nav-item").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
     $$("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
     $("#profileBtn").addEventListener("click",()=>go("setupView"));
@@ -301,12 +306,20 @@
     $("#equipmentFilter").addEventListener("change",renderLibrary);
     $("#modalClose").addEventListener("click",closeModal);
     $("#modal").addEventListener("click",e=>{if(e.target===$("#modal"))closeModal();});
-    document.addEventListener("click",e=>{const target=e.target.closest("[data-action]");if(target)handleAction(target);if(e.target.id==="finishEarly")finishSession("interrupted");if(e.target.id==="finishCompleted")finishSession("completed");});
+    document.addEventListener("click",e=>{const target=e.target.closest("[data-action]");if(target)handleAction(target);if(e.target.id==="finishEarly")finishSession("interrupted");if(e.target.id==="finishCompleted")finishSession("completed");if(e.target.id==="testSoundBtn")testSound();});
     document.addEventListener("change",e=>{
       const t=e.target;
       if(t.dataset.action==="complete-set")completeSet(Number(t.dataset.ei),Number(t.dataset.si),t.checked);
       else if(t.dataset.action==="log-weight"||t.dataset.action==="log-reps"){
-        const s=state.session,ex=s?.exercises[Number(t.dataset.ei)],set=ex?.setsLog[Number(t.dataset.si)];if(set){if(t.dataset.action==="log-weight")set.weight=Math.max(0,Number(t.value)||0);else set.reps=Math.max(1,Number(t.value)||1);persist();}
+        const s=state.session,ei=Number(t.dataset.ei),si=Number(t.dataset.si),ex=s?.exercises[ei],set=ex?.setsLog[si];
+        if(set){
+          const field=t.dataset.action==="log-weight"?"weight":"reps";
+          set[field]=field==="weight"?Math.max(0,Number(t.value)||0):Math.max(1,Number(t.value)||1);
+          // The first set defines defaults for every remaining set; a later set can still be edited individually.
+          if(si===0){ex.setsLog.forEach((other,index)=>{if(index>0)other[field]=set[field];});}
+          ex[field]=set[field];persist();
+          if(si===0){renderSession();showToast(field==="weight"?"Carico aggiornato per tutte le serie.":"Ripetizioni aggiornate per tutte le serie.");}
+        }
       }
     });
     document.addEventListener("visibilitychange",()=>{if(!document.hidden&&state.session){startSessionClock();if(state.session.restEndsAt)startRestClock();}});
