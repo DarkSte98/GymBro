@@ -1,4 +1,4 @@
-# GymBro Test v6 — Versione unificata
+# GymBro Test v7 — Serie e Social Studio
 
 Prototipo PWA mobile-first per GitHub Pages. Tema nero/antracite e verde lime.
 
@@ -17,3 +17,10 @@ Caricare tutti i 7 file nella root del repository GitHub e abilitare GitHub Page
 
 ## Limiti del prototipo
 Non c'è backend/account cloud. Instagram non offre un pulsante universale per pubblicare direttamente una Storia da una normale pagina web: la disponibilità dipende dal menu di condivisione del dispositivo e dalle app installate. Se non compare, salva il PNG e caricalo da Instagram.
+
+
+## Correzioni v7
+- Il pulsante principale del riepilogo apre direttamente il generatore di grafica 9:16; la condivisione del solo testo è separata.
+- Il salvataggio delle impostazioni dell'esercizio applica peso e ripetizioni a tutte le serie mantenendo lo stato completato delle serie già svolte.
+- La modifica di peso o ripetizioni nella prima serie propaga il valore alle altre; le serie successive possono essere modificate singolarmente.
+- Service worker con nuova versione cache: `gymbro-v7-social-series`.

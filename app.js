@@ -233,8 +233,22 @@
     openModal(`<div class="eyebrow">MODIFICA ESERCIZIO</div><h2 id="modalTitle">${escapeHTML(e.name)}</h2><label class="modal-label">Numero serie<input id="editSets" type="number" min="1" max="20" value="${e.setsLog.length}"></label><label class="modal-label">Ripetizioni per serie<input id="editReps" type="number" min="1" max="300" value="${e.reps}"></label><label class="modal-label">Recupero in secondi<input id="editRest" type="number" min="0" max="900" value="${e.rest}"></label><label class="modal-label">Carico predefinito (kg)<input id="editWeight" type="number" min="0" step=".5" value="${e.weight||0}"></label><label class="check-option"><input id="editUnilateral" type="checkbox" ${e.unilateral?"checked":""}> Esercizio unilaterale</label><label class="check-option"><input id="editCircuit" type="checkbox" ${e.circuit?"checked":""}> Parte di un circuito</label><button class="primary full" id="applySessionEdit">Salva modifiche</button>`);
     $("#applySessionEdit").onclick=()=>{
       const sets=Math.max(1,Math.min(20,Number($("#editSets").value)||1)),reps=Math.max(1,Number($("#editReps").value)||1),rest=Math.max(0,Number($("#editRest").value)||0),weight=Math.max(0,Number($("#editWeight").value)||0);
-      const old=e.setsLog;e.setsLog=Array.from({length:sets},(_,i)=>{const previous=old[i]||{done:false};return {...previous,weight,reps};});e.reps=reps;e.rest=rest;e.weight=weight;e.unilateral=$("#editUnilateral").checked;e.circuit=$("#editCircuit").checked;
-      persist();closeModal();renderSession();showToast("Esercizio aggiornato.");
+      const old=e.setsLog.slice();
+      e.setsLog=Array.from({length:sets},(_,i)=>{
+        const previous=old[i]||{done:false};
+        return {...previous,weight,reps};
+      });
+      e.reps=reps;
+      e.rest=rest;
+      e.weight=weight;
+      e.unilateral=$("#editUnilateral").checked;
+      e.circuit=$("#editCircuit").checked;
+      // Persist explicit defaults and each row value before repainting the session.
+      persist();
+      closeModal();
+      renderSession();
+      showToast(`Aggiornate ${sets} serie: ${weight} kg × ${reps} ripetizioni.`);
+
     };
   }
   function addExerciseDuringSession(){
@@ -254,14 +268,14 @@
     state.history.push(record);state.session=null;persist();closeModal();go("historyView");showSummary(record);
   }
   function showSummary(r){
-    openModal(`<div class="eyebrow">ALLENAMENTO ${r.status==="completed"?"COMPLETATO":"INTERROTTO"}</div><h1 id="modalTitle">Bel lavoro<span class="lime">.</span></h1><p class="muted">${escapeHTML(r.planName)} · ${new Date(r.endedAt).toLocaleDateString("it-IT")}</p><div class="summary-grid"><div class="summary-stat"><strong>${formatTime(r.duration)}</strong><span>DURATA TOTALE</span></div><div class="summary-stat"><strong>${Math.round(r.volume).toLocaleString("it-IT")} kg</strong><span>VOLUME REGISTRATO</span></div><div class="summary-stat"><strong>${r.exercisesCompleted}/${r.exerciseCount}</strong><span>ESERCIZI COMPLETATI</span></div><div class="summary-stat"><strong>${r.reps}</strong><span>RIPETIZIONI REGISTRATE</span></div><div class="summary-stat"><strong>${r.setsCompleted}/${r.setsPlanned}</strong><span>SERIE COMPLETATE</span></div></div><button class="primary full" id="shareSummary">Condividi riepilogo ↗</button><button class="secondary full" id="createStoryGraphic" style="width:100%;margin-top:8px">Crea grafica per Instagram / social</button><p class="muted" style="margin-top:12px">Il volume è una stima basata sui kg e sulle ripetizioni registrate; gli esercizi a corpo libero non sono inclusi nel volume.</p>`);
+    openModal(`<div class="eyebrow">ALLENAMENTO ${r.status==="completed"?"COMPLETATO":"INTERROTTO"}</div><h1 id="modalTitle">Bel lavoro<span class="lime">.</span></h1><p class="muted">${escapeHTML(r.planName)} · ${new Date(r.endedAt).toLocaleDateString("it-IT")}</p><div class="summary-grid"><div class="summary-stat"><strong>${formatTime(r.duration)}</strong><span>DURATA TOTALE</span></div><div class="summary-stat"><strong>${Math.round(r.volume).toLocaleString("it-IT")} kg</strong><span>VOLUME REGISTRATO</span></div><div class="summary-stat"><strong>${r.exercisesCompleted}/${r.exerciseCount}</strong><span>ESERCIZI COMPLETATI</span></div><div class="summary-stat"><strong>${r.reps}</strong><span>RIPETIZIONI REGISTRATE</span></div><div class="summary-stat"><strong>${r.setsCompleted}/${r.setsPlanned}</strong><span>SERIE COMPLETATE</span></div></div><button class="primary full" id="createStoryGraphic">Crea e condividi grafica per Instagram ↗</button><button class="secondary full" id="shareSummary" style="width:100%;margin-top:8px">Condividi solo testo</button><p class="muted" style="margin-top:12px">Il volume è una stima basata sui kg e sulle ripetizioni registrate; gli esercizi a corpo libero non sono inclusi nel volume.</p>`);
     $("#shareSummary").onclick=()=>shareRecord(r);
     $("#createStoryGraphic").onclick=()=>openStoryGraphic(r);
   }
   let storyRecord = null, storyPhoto = null, storyTemplate = "lime";
   function openStoryGraphic(r){
     storyRecord=r;storyPhoto=null;storyTemplate="lime";
-    openModal(`<div class="eyebrow">GYMBRO SOCIAL STUDIO</div><h2 id="modalTitle">Il tuo allenamento, da condividere.</h2><p class="muted">Crea una grafica verticale 9:16 per Storie Instagram e altri social. Puoi aggiungere una tua foto.</p><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima grafica allenamento"></canvas><div class="story-controls"><label class="secondary story-file-label">＋ Aggiungi foto <input id="storyPhotoInput" type="file" accept="image/*" hidden></label><label class="story-template-label">Stile <select id="storyTemplate"><option value="lime">GymBro Lime</option><option value="photo">Foto in primo piano</option></select></label></div><div class="stack" style="margin-top:12px"><button class="primary full" id="shareStoryImage">Condividi immagine ↗</button><button class="secondary full" id="downloadStoryImage">Salva immagine PNG</button><p class="muted">Su iPhone, “Condividi immagine” apre il menu di condivisione se Safari supporta la condivisione dei file. Se Instagram è installato e compare nel menu, selezionalo; altrimenti salva l'immagine e caricala da Instagram.</p></div>`);
+    openModal(`<div class="eyebrow">GYMBRO SOCIAL STUDIO</div><h2 id="modalTitle">Il tuo allenamento, da condividere.</h2><p class="muted">Questa è la grafica da condividere, non un messaggio di testo: anteprima verticale 9:16 con i risultati dell'allenamento. Puoi aggiungere una tua foto, poi inviare il PNG dal menu iPhone oppure salvarlo per Instagram Stories.</p><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima grafica allenamento"></canvas><div class="story-controls"><label class="secondary story-file-label">＋ Aggiungi foto <input id="storyPhotoInput" type="file" accept="image/*" hidden></label><label class="story-template-label">Stile <select id="storyTemplate"><option value="lime">GymBro Lime</option><option value="photo">Foto in primo piano</option></select></label></div><div class="stack" style="margin-top:12px"><button class="primary full" id="shareStoryImage">Condividi immagine ↗</button><button class="secondary full" id="downloadStoryImage">Salva immagine PNG</button><p class="muted">Su iPhone, “Condividi immagine” apre il menu di condivisione se Safari supporta la condivisione dei file. Se Instagram è installato e compare nel menu, selezionalo; altrimenti salva l'immagine e caricala da Instagram.</p></div>`);
     drawStoryGraphic();
     $("#storyPhotoInput").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{storyPhoto=await loadImage(URL.createObjectURL(f));drawStoryGraphic();}catch{showToast("Non riesco a leggere questa foto.");}});
     $("#storyTemplate").addEventListener("change",e=>{storyTemplate=e.target.value;drawStoryGraphic();});
@@ -378,10 +392,16 @@
         if(set){
           const field=t.dataset.action==="log-weight"?"weight":"reps";
           set[field]=field==="weight"?Math.max(0,Number(t.value)||0):Math.max(1,Number(t.value)||1);
-          // The first set defines defaults for every remaining set; a later set can still be edited individually.
-          if(si===0){ex.setsLog.forEach((other,index)=>{if(index>0)other[field]=set[field];});}
-          ex[field]=set[field];persist();
-          if(si===0){renderSession();showToast(field==="weight"?"Carico aggiornato per tutte le serie.":"Ripetizioni aggiornate per tutte le serie.");}
+          // Editing set 1 updates every planned set; editing later sets changes only that set.
+          if(si===0){
+            ex[field]=set[field];
+            ex.setsLog.forEach((other,index)=>{if(index>0)other[field]=set[field];});
+          }
+          persist();
+          if(si===0){
+            renderSession();
+            showToast(field==="weight"?"Carico aggiornato in tutte le serie.":"Ripetizioni aggiornate in tutte le serie.");
+          }
         }
       }
     });
