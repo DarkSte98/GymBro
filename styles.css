@@ -6,3 +6,9 @@
 
 /* GymBro Social Studio */
 #storyCanvas{display:block;width:min(100%,340px);height:auto;aspect-ratio:9/16;margin:16px auto;border-radius:14px;border:1px solid #3b4340;background:#111315;box-shadow:0 12px 35px #0007}.story-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.story-file-label,.story-template-label{min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700}.story-template-label{display:grid;grid-template-columns:auto 1fr;background:#202428;border:1px solid #ffffff0d;color:var(--text)}.story-template-label select{min-height:34px;padding:6px;font-size:12px}
+
+.story-sticker-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;margin-top:10px;padding:10px;border:1px solid #ffffff18;border-radius:12px;background:#171a1d}
+.story-sticker-tools .muted{font-size:12px;grid-column:1/-1}
+.story-sticker-tools select{min-width:0;width:100%;padding:10px;background:#202428;color:var(--text);border:1px solid #ffffff22;border-radius:9px}
+#storyCanvas{touch-action:none;cursor:grab}
+#storyCanvas:active{cursor:grabbing}

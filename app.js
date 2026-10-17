@@ -272,30 +272,70 @@
     $("#shareSummary").onclick=()=>shareRecord(r);
     $("#createStoryGraphic").onclick=()=>openStoryGraphic(r);
   }
-  let storyRecord = null, storyPhoto = null, storyTemplate = "lime";
+  let storyRecord = null, storyPhoto = null, storyTemplate = "photo", storyStickers = [], selectedSticker = 0;
   function openStoryGraphic(r){
-    storyRecord=r;storyPhoto=null;storyTemplate="lime";
-    openModal(`<div class="eyebrow">GYMBRO SOCIAL STUDIO</div><h2 id="modalTitle">Il tuo allenamento, da condividere.</h2><p class="muted">Questa è la grafica da condividere, non un messaggio di testo: anteprima verticale 9:16 con i risultati dell'allenamento. Puoi aggiungere una tua foto, poi inviare il PNG dal menu iPhone oppure salvarlo per Instagram Stories.</p><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima grafica allenamento"></canvas><div class="story-controls"><label class="secondary story-file-label">＋ Aggiungi foto <input id="storyPhotoInput" type="file" accept="image/*" hidden></label><label class="story-template-label">Stile <select id="storyTemplate"><option value="lime">GymBro Lime</option><option value="photo">Foto in primo piano</option></select></label></div><div class="stack" style="margin-top:12px"><button class="primary full" id="shareStoryImage">Condividi immagine ↗</button><button class="secondary full" id="downloadStoryImage">Salva immagine PNG</button><p class="muted">Su iPhone, “Condividi immagine” apre il menu di condivisione se Safari supporta la condivisione dei file. Se Instagram è installato e compare nel menu, selezionalo; altrimenti salva l'immagine e caricala da Instagram.</p></div>`);
+    storyRecord=r;storyPhoto=null;storyTemplate="photo";
+    storyStickers = [
+      {id:"title",label:"Titolo",x:38,y:100,w:464,h:110,kind:"title"},
+      {id:"duration",label:"Durata",x:34,y:545,w:220,h:112,kind:"stat",stat:"DURATA"},
+      {id:"volume",label:"Volume",x:286,y:545,w:220,h:112,kind:"stat",stat:"VOLUME"},
+      {id:"sets",label:"Serie",x:34,y:675,w:220,h:112,kind:"stat",stat:"SERIE"},
+      {id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,kind:"stat",stat:"RIPETIZIONI"}
+    ];
+    selectedSticker=0;
+    openModal(`<div class="eyebrow">GYMBRO SOCIAL STUDIO</div><h2 id="modalTitle">Il tuo allenamento, da condividere.</h2><p class="muted">Aggiungi una foto come sfondo: non verrà coperta da un pannello scuro. Gli adesivi con statistiche sono sovrapposti alla foto: trascinali per posizionarli e usa l'angolo in basso a destra per ridimensionarli.</p><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima con adesivi spostabili e ridimensionabili"></canvas><div class="story-controls"><label class="secondary story-file-label">＋ Foto di sfondo <input id="storyPhotoInput" type="file" accept="image/*" hidden></label><label class="story-template-label">Stile adesivi <select id="storyTemplate"><option value="photo">Adesivi traslucidi</option><option value="lime">Adesivi lime</option></select></label></div><div class="story-sticker-tools"><span class="muted">Adesivo selezionato:</span><select id="stickerSelect" aria-label="Seleziona adesivo"><option value="0">Titolo</option><option value="1">Durata</option><option value="2">Volume</option><option value="3">Serie</option><option value="4">Ripetizioni</option></select><button class="secondary" id="resetStickers" type="button">Ripristina posizione</button></div><div class="stack" style="margin-top:12px"><button class="primary full" id="shareStoryImage">Condividi immagine ↗</button><button class="secondary full" id="downloadStoryImage">Salva immagine PNG</button><p class="muted">Su iPhone, “Condividi immagine” apre il menu di condivisione se Safari supporta la condivisione dei file. Se Instagram è installato e compare nel menu, selezionalo; altrimenti salva l'immagine e caricala da Instagram.</p></div>`);
     drawStoryGraphic();
     $("#storyPhotoInput").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{storyPhoto=await loadImage(URL.createObjectURL(f));drawStoryGraphic();}catch{showToast("Non riesco a leggere questa foto.");}});
     $("#storyTemplate").addEventListener("change",e=>{storyTemplate=e.target.value;drawStoryGraphic();});
+    $("#stickerSelect").addEventListener("change",e=>{selectedSticker=Number(e.target.value)||0;drawStoryGraphic();});
+    $("#resetStickers").addEventListener("click",()=>{storyStickers[0]={id:"title",label:"Titolo",x:38,y:100,w:464,h:110,kind:"title"};storyStickers[1]={id:"duration",label:"Durata",x:34,y:545,w:220,h:112,kind:"stat",stat:"DURATA"};storyStickers[2]={id:"volume",label:"Volume",x:286,y:545,w:220,h:112,kind:"stat",stat:"VOLUME"};storyStickers[3]={id:"sets",label:"Serie",x:34,y:675,w:220,h:112,kind:"stat",stat:"SERIE"};storyStickers[4]={id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,kind:"stat",stat:"RIPETIZIONI"};drawStoryGraphic();});
+    const sc=$("#storyCanvas");let dragSticker=null,dragMode="move",dragStart=null;
+    sc.addEventListener("pointerdown",e=>{const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height;let idx=-1;for(let i=storyStickers.length-1;i>=0;i--){const st=storyStickers[i];if(x>=st.x&&x<=st.x+st.w&&y>=st.y&&y<=st.y+st.h){idx=i;break;}}if(idx<0)return;selectedSticker=idx;$("#stickerSelect").value=String(idx);dragSticker=idx;const st=storyStickers[idx];dragMode=(x>st.x+st.w-34&&y>st.y+st.h-34)?"resize":"move";dragStart={x,y,sx:st.x,sy:st.y,sw:st.w,sh:st.h};sc.setPointerCapture(e.pointerId);drawStoryGraphic();e.preventDefault();});
+    sc.addEventListener("pointermove",e=>{if(dragSticker===null||!dragStart)return;const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height,st=storyStickers[dragSticker];if(dragMode==="move"){st.x=Math.max(0,Math.min(sc.width-st.w,dragStart.sx+x-dragStart.x));st.y=Math.max(0,Math.min(sc.height-st.h,dragStart.sy+y-dragStart.y));}else{st.w=Math.max(120,Math.min(sc.width-st.x,dragStart.sw+x-dragStart.x));st.h=Math.max(76,Math.min(sc.height-st.y,dragStart.sh+y-dragStart.y));}drawStoryGraphic();e.preventDefault();});
+    const endDrag=()=>{dragSticker=null;dragStart=null;};sc.addEventListener("pointerup",endDrag);sc.addEventListener("pointercancel",endDrag);
     $("#shareStoryImage").addEventListener("click",shareStoryImage);
     $("#downloadStoryImage").addEventListener("click",downloadStoryImage);
   }
   function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src;});}
   function drawStoryGraphic(){
-    const canvas=$("#storyCanvas");if(!canvas||!storyRecord)return;const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,r=storyRecord;
+    const canvas=$("#storyCanvas");if(!canvas||!storyRecord)return;
+    const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,r=storyRecord;
     ctx.clearRect(0,0,w,h);
-    if(storyPhoto){const scale=Math.max(w/storyPhoto.width,h/storyPhoto.height),iw=storyPhoto.width*scale,ih=storyPhoto.height*scale;ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);ctx.fillStyle="rgba(9,12,10,.68)";ctx.fillRect(0,0,w,h);}else{const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#28351a");g.addColorStop(.48,"#171a1c");g.addColorStop(1,"#090b0c");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(195,255,61,.14)";ctx.lineWidth=2;for(let i=0;i<7;i++){ctx.beginPath();ctx.arc(w+20,90,80+i*38,0,Math.PI*2);ctx.stroke();}}
-    const lime="#c3ff3d",white="#f4f6f5",muted="#bdc4c0";
-    ctx.fillStyle=lime;ctx.font="bold 26px Arial, sans-serif";ctx.fillText("GB",44,66);ctx.fillStyle=white;ctx.font="bold 25px Arial, sans-serif";ctx.fillText("GymBro",82,65);ctx.fillStyle=muted;ctx.font="bold 11px Arial, sans-serif";ctx.fillText("YOUR GYM. YOUR RULES.",84,85);
-    ctx.strokeStyle="rgba(255,255,255,.28)";ctx.beginPath();ctx.moveTo(44,112);ctx.lineTo(w-44,112);ctx.stroke();
-    ctx.fillStyle=lime;ctx.font="bold 16px Arial, sans-serif";ctx.fillText("ALLENAMENTO COMPLETATO",44,164);
-    ctx.fillStyle=white;ctx.font="bold 37px Arial, sans-serif";wrapCanvasText(ctx,r.planName||"Il mio allenamento",44,218,w-88,44,2);
-    ctx.fillStyle=muted;ctx.font="17px Arial, sans-serif";ctx.fillText(new Date(r.endedAt).toLocaleDateString("it-IT",{day:"2-digit",month:"long",year:"numeric"}),44,305);
-    const cards=[{label:"DURATA",value:formatTime(r.duration)},{label:"VOLUME REGISTRATO",value:`${Math.round(r.volume).toLocaleString("it-IT")} kg`},{label:"ESERCIZI",value:String(r.exercisesCompleted)},{label:"SERIE COMPLETATE",value:String(r.setsCompleted)},{label:"RIPETIZIONI",value:String(r.reps)}];
-    let y=360;cards.forEach((c,i)=>{const col=i%2,row=Math.floor(i/2),x=44+col*232,yy=y+row*132,cw=216,ch=108;ctx.fillStyle="rgba(18,21,20,.76)";roundRect(ctx,x,yy,cw,ch,14);ctx.fill();ctx.strokeStyle="rgba(195,255,61,.3)";ctx.stroke();ctx.fillStyle=muted;ctx.font="bold 11px Arial, sans-serif";ctx.fillText(c.label,x+15,yy+28);ctx.fillStyle=lime;ctx.font=`bold ${c.value.length>10?24:32}px Arial, sans-serif`;ctx.fillText(c.value,x+15,yy+72);});
-    ctx.fillStyle=white;ctx.font="bold 17px Arial, sans-serif";ctx.fillText("TRACCIA. SPINGI. MIGLIORA.",44,842);ctx.fillStyle=lime;ctx.fillRect(44,866,w-88,3);ctx.fillStyle=muted;ctx.font="12px Arial, sans-serif";ctx.fillText("Il volume è una stima dei carichi registrati",44,900);ctx.fillText("@GYMBRO",44,930);
+    if(storyPhoto){
+      const scale=Math.max(w/storyPhoto.width,h/storyPhoto.height),iw=storyPhoto.width*scale,ih=storyPhoto.height*scale;
+      ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);
+    } else {
+      const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#26321a");g.addColorStop(.5,"#171a1c");g.addColorStop(1,"#090b0c");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+      ctx.fillStyle="rgba(255,255,255,.18)";ctx.font="bold 23px Arial";ctx.fillText("AGGIUNGI UNA FOTO DI SFONDO",36,480);
+    }
+    const lime="#c3ff3d",white="#ffffff",muted="#f0f0f0";
+    const values={
+      DURATA:formatTime(r.duration),
+      VOLUME:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,
+      SERIE:`${r.setsCompleted}/${r.setsPlanned}`,
+      RIPETIZIONI:String(r.reps)
+    };
+    storyStickers.forEach((st,i)=>{
+      const selected=i===selectedSticker;
+      if(st.kind==="title"){
+        ctx.fillStyle=storyTemplate==="lime"?"rgba(9,12,10,.78)":"rgba(12,14,14,.40)";
+        roundRect(ctx,st.x,st.y,st.w,st.h,22);ctx.fill();
+        ctx.strokeStyle=selected?lime:"rgba(255,255,255,.72)";ctx.lineWidth=selected?3:1.5;ctx.stroke();
+        ctx.fillStyle=lime;ctx.font="bold 19px Arial";ctx.fillText("GYMBRO  /  ALLENAMENTO",st.x+20,st.y+31);
+        ctx.fillStyle=white;ctx.font="bold 30px Arial";wrapCanvasText(ctx,r.planName||"Il mio allenamento",st.x+20,st.y+72,st.w-40,34,1);
+      } else {
+        ctx.fillStyle=storyTemplate==="lime"?"rgba(10,13,10,.82)":"rgba(12,14,14,.46)";
+        roundRect(ctx,st.x,st.y,st.w,st.h,20);ctx.fill();
+        ctx.strokeStyle=selected?lime:"rgba(255,255,255,.82)";ctx.lineWidth=selected?3:1.5;ctx.stroke();
+        ctx.fillStyle=storyTemplate==="lime"?lime:white;ctx.font="bold 15px Arial";ctx.fillText(st.stat,st.x+16,st.y+30);
+        ctx.fillStyle=white;ctx.font=`bold ${String(values[st.stat]).length>10?22:29}px Arial`;ctx.fillText(values[st.stat],st.x+16,st.y+72);
+      }
+      if(selected){
+        ctx.fillStyle=lime;ctx.beginPath();ctx.arc(st.x+st.w-10,st.y+st.h-10,13,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle="#101310";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(st.x+st.w-17,st.y+st.h-3);ctx.lineTo(st.x+st.w-3,st.y+st.h-17);ctx.stroke();
+      }
+    });
+    ctx.fillStyle="rgba(255,255,255,.92)";ctx.font="bold 14px Arial";ctx.fillText("TRACCIA. SPINGI. MIGLIORA.",28,h-26);
   }
   function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines=2){let line="",lines=[];for(const word of String(text).split(/\s+/)){const test=line?line+" "+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word;}else line=test;}if(line)lines.push(line);lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));}
   function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}

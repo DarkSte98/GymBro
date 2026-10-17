@@ -24,3 +24,11 @@ Non c'è backend/account cloud. Instagram non offre un pulsante universale per p
 - Il salvataggio delle impostazioni dell'esercizio applica peso e ripetizioni a tutte le serie mantenendo lo stato completato delle serie già svolte.
 - La modifica di peso o ripetizioni nella prima serie propaga il valore alle altre; le serie successive possono essere modificate singolarmente.
 - Service worker con nuova versione cache: `gymbro-v7-social-series`.
+
+
+## v8 — Social Studio a adesivi
+- Foto scelta come sfondo senza pannello scuro globale.
+- Adesivi di titolo, durata, volume, serie e ripetizioni sovrapposti alla foto.
+- Trascina gli adesivi per posizionarli; usa il punto lime nell'angolo per ridimensionarli.
+- Selettore adesivo, stili traslucido/lime e ripristino posizione.
+- Cache service worker aggiornata a `gymbro-v8-sticker-editor`.
