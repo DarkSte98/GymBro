@@ -163,9 +163,38 @@
       if(remaining<=0){clearInterval(restInterval);s.restEndsAt=null;s.restExerciseId=null;persist();playBeep();renderSession();showToast("Recupero terminato. Si riparte!");}
     },250);
   }
-  function playBeep(){
-    try{const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;const ctx=new Ctx();const osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.frequency.value=880;gain.gain.value=.08;osc.start();osc.stop(ctx.currentTime+.28);osc.onended=()=>ctx.close();}catch(e){console.warn("Audio non disponibile",e);}
-    if("vibrate" in navigator)navigator.vibrate([150,80,150]);
+  // iOS Safari richiede che l'AudioContext venga sbloccato durante un gesto dell'utente.
+  let gymBroAudioContext = null;
+  async function unlockWorkoutAudio(){
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!gymBroAudioContext) gymBroAudioContext = new Ctx();
+      if (gymBroAudioContext.state === "suspended") await gymBroAudioContext.resume();
+      // Un campione quasi silenzioso sblocca l'uscita audio su alcuni browser mobile.
+      const buffer = gymBroAudioContext.createBuffer(1, 1, gymBroAudioContext.sampleRate);
+      const source = gymBroAudioContext.createBufferSource();
+      source.buffer = buffer; source.connect(gymBroAudioContext.destination); source.start(0);
+    } catch (e) { console.warn("Audio non disponibile", e); }
+  }
+  async function playBeep(){
+    try {
+      await unlockWorkoutAudio();
+      const ctx = gymBroAudioContext;
+      if (ctx && ctx.state === "running") {
+        [0, 0.22, 0.44].forEach((offset) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = 880;
+          gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
+          gain.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + offset + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.18);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + offset); osc.stop(ctx.currentTime + offset + 0.19);
+        });
+      }
+    } catch (e) { console.warn("Suono di recupero non riprodotto", e); }
+    try { if ("vibrate" in navigator) navigator.vibrate([180, 100, 180]); } catch (_) {}
   }
   function completeSet(ei,si,checked){
     const s=state.session;if(!s)return;const e=s.exercises[ei],set=e?.setsLog[si];if(!e||!set)return;
@@ -243,6 +272,9 @@
     }
   }
   function bind(){
+    // Sblocca l'audio al primo tocco/click dell'utente, prima che scada il recupero.
+    document.addEventListener("pointerdown", () => { unlockWorkoutAudio(); }, { once: true, passive: true });
+    document.addEventListener("touchstart", () => { unlockWorkoutAudio(); }, { once: true, passive: true });
     $$(".nav-item").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
     $$("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
     $("#profileBtn").addEventListener("click",()=>go("setupView"));
