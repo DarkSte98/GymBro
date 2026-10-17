@@ -1,21 +1,19 @@
-# GymBro Test
+# GymBro Test v6 — Versione unificata
 
-Prototipo mobile-first per GitHub Pages. Identità visiva nero/antracite e verde lime.
+Prototipo PWA mobile-first per GitHub Pages. Tema nero/antracite e verde lime.
 
-## Pubblicazione su GitHub Pages
-1. Crea un repository chiamato `gymbro-test`.
-2. Carica tutti i file nella root del repository.
-3. In Settings → Pages scegli Deploy from a branch, branch `main`, folder `/(root)`.
-4. Apri `https://TUO-USERNAME.github.io/gymbro-test/`.
+## Funzioni
+- Schede e sessioni con timer generale e timer recupero.
+- Modifica del peso e delle ripetizioni nella prima serie propagata alle altre serie; le serie successive restano modificabili singolarmente.
+- Archivio esercizi con filtri per gruppo muscolare.
+- Salvataggio locale nel browser (`gymbro_test_v1`).
+- Riepilogo allenamento e condivisione testuale.
+- Social Studio: crea una grafica verticale 9:16 in PNG con statistiche GymBro, foto opzionale, stile con sfondo lime o foto in primo piano.
+- Audio di recupero con comando di prova; la riproduzione reale va comunque verificata su Safari iOS.
+- Condivisione dell'immagine tramite Web Share API quando supportata; fallback per salvare il PNG e caricarlo manualmente su Instagram o altri social.
 
-## Aggiornamento v3 test
-- Archivio con filtri per gruppi muscolari più dettagliati.
-- Il peso o le ripetizioni modificati nella prima serie aggiornano le altre serie come valori predefiniti. Le serie successive restano modificabili singolarmente.
-- Pulsante “Attiva e prova il suono” nella sessione per sbloccare/verificare l’audio su Safari iOS. Il comportamento audio deve essere confermato sul dispositivo reale.
-- Cache del service worker aggiornata per richiedere i nuovi file.
+## Pubblicazione
+Caricare tutti i 7 file nella root del repository GitHub e abilitare GitHub Pages su `main` / `/(root)`.
 
-## Stato del prototipo
-- Funzioni demo e salvataggio locale via localStorage.
-- Non contiene ancora account reali o database cloud.
-- I video originali non sono ancora incorporati.
-- Il timer del browser può essere limitato da iOS in background; il prototipo è destinato ai test in primo piano.
+## Limiti del prototipo
+Non c'è backend/account cloud. Instagram non offre un pulsante universale per pubblicare direttamente una Storia da una normale pagina web: la disponibilità dipende dal menu di condivisione del dispositivo e dalle app installate. Se non compare, salva il PNG e caricalo da Instagram.
