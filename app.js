@@ -246,7 +246,19 @@
     $$(".nav-item").forEach(b=>b.addEventListener("click",()=>go(b.dataset.view)));
     $$("[data-go]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.go)));
     $("#profileBtn").addEventListener("click",()=>go("setupView"));
-    $("#startFromHome").addEventListener("click",()=>{if(!state.plans.length){go("plansView");generatePlan();}else go("plansView");});
+    $("#startFromHome").addEventListener("click",()=>{
+      // Il CTA principale deve avviare davvero una sessione, non limitarsi a cambiare schermata.
+      if (state.session) { go("sessionView"); renderSession(); return; }
+      if (!state.plans.length) {
+        generatePlan();
+        const generated = state.plans[state.plans.length - 1];
+        if (generated && generated.exercises.length) startSession(generated.id);
+        else go("plansView");
+        return;
+      }
+      // Se esistono schede, avvia la più recente; dalla sezione Schede si può scegliere un'altra scheda.
+      startSession(state.plans[state.plans.length - 1].id);
+    });
     $("#profileForm").addEventListener("submit",saveProfile);
     $("#newPlanBtn").addEventListener("click",()=>openPlanEditor());
     $("#addExerciseBtn").addEventListener("click",()=>{go("libraryView");showToast("Scegli un esercizio e premi Aggiungi a scheda.");});
