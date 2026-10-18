@@ -272,59 +272,110 @@
     $("#shareSummary").onclick=()=>shareRecord(r);
     $("#createStoryGraphic").onclick=()=>openStoryGraphic(r);
   }
-  let storyRecord = null, storyPhoto = null, storyTemplate = "photo", storyStickers = [], selectedSticker = 0, storyBg = "#171a1c";
-  const STORY_STYLES = ["Pulito", "GymBro", "Contorno", "Editoriale"];
+  let storyRecord = null, storyPhoto = null, storyTemplate = "classic", storyStickers = [], selectedSticker = 0, storyBg = "#171a1c", storyScreen = "chooser";
+  const STORY_TEMPLATES = [
+    {id:"classic",name:"Classico",kind:"summary",caption:"Statistiche pulite"},
+    {id:"editorial",name:"Editoriale",kind:"editorial",caption:"Titolo e dati"},
+    {id:"minimal",name:"Minimal",kind:"minimal",caption:"Solo numeri"},
+    {id:"anatomy",name:"Performance",kind:"anatomy",caption:"Focus allenamento"},
+    {id:"photo",name:"La tua foto",kind:"photo",caption:"Sfondo personalizzato"}
+  ];
   function openStoryGraphic(r){
-    storyRecord=r;storyPhoto=null;storyTemplate="Pulito";storyBg="#171a1c";
+    storyRecord=r;storyPhoto=null;storyTemplate="classic";storyBg="#171a1c";storyScreen="chooser";
     const values=storyValues(r);
     storyStickers=[
-      {id:uid(),kind:"title",label:"Titolo",text:r.planName||"Il mio allenamento",x:42,y:160,size:42,color:"#ffffff",weight:700,style:"Pulito"},
-      {id:uid(),kind:"stat",label:"Durata",stat:"DURATA",x:42,y:610,size:23,color:"#ffffff",weight:700,style:"Pulito"},
-      {id:uid(),kind:"stat",label:"Volume",stat:"VOLUME",x:42,y:680,size:34,color:"#c3ff3d",weight:700,style:"Pulito"}
+      {id:uid(),kind:"block",label:"Riepilogo",preset:"summary",text:"",lines:[{text:r.planName||"Allenamento",size:.72,color:"#ffffff",weight:600},{text:values.DURATA,size:1.12,color:"#ffffff",weight:700},{text:`${Math.round(r.volume).toLocaleString("it-IT")} kg  ·  ${r.setsCompleted} serie`,size:.52,color:"#ffffff",weight:500}],x:58,y:680,size:38,color:"#ffffff",weight:600,style:"classic"},
     ];selectedSticker=0;
-    openModal(`<div class="social-editor" id="socialEditor">
-      <header class="social-editor-head"><button class="social-icon-btn" id="storyBack" aria-label="Indietro">‹</button><div><strong>GymBro <span>STORY STUDIO</span></strong><small>Crea la tua storia</small></div><button class="social-done" id="storyDone">Fatto ✓</button></header>
-      <div class="story-stage-wrap"><div class="story-stage"><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima storia a tutta pagina"></canvas></div></div>
-      <div class="story-editor-panel"><div class="story-editor-tabs"><button class="story-tab active" data-panel="background">Sfondo</button><button class="story-tab" data-panel="stickers">Adesivi</button><button class="story-tab" data-panel="style">Stile</button></div>
-        <div class="story-panel active" id="panel-background"><label class="story-action-tile">▧ <span><b>La tua foto</b><small>Usa una foto come sfondo</small></span><input id="storyPhotoInput" type="file" accept="image/*" hidden></label><div class="story-bg-swatches"><button data-bg="#171a1c" aria-label="Antracite" class="active" style="background:#171a1c"></button><button data-bg="#080909" aria-label="Nero" style="background:#080909"></button><button data-bg="#23301a" aria-label="Verde scuro" style="background:#23301a"></button><button data-bg="#c3ff3d" aria-label="Lime" style="background:#c3ff3d"></button></div><p class="story-helper">La foto resta sullo sfondo. Puoi spostare e ingrandire ogni elemento senza modificare l'immagine.</p></div>
-        <div class="story-panel" id="panel-stickers"><div class="story-sticker-grid"><button data-add="summaryBlock"><b>1h 35m</b><span>Riepilogo</span></button><button data-add="volumeBlock"><b>3.620 kg</b><span>Volume + serie</span></button><button data-add="performanceBlock"><b>33 · 120</b><span>Performance</span></button><button data-add="duration"><b>00:00</b><span>Durata</span></button><button data-add="volume"><b>3.620 kg</b><span>Volume</span></button><button data-add="sets"><b>33</b><span>Serie</span></button><button data-add="reps"><b>120</b><span>Ripetizioni</span></button><button data-add="exercises"><b>8</b><span>Esercizi</span></button><button data-add="calories"><b>483 kcal</b><span>Calorie*</span></button><button data-add="title"><b>Tt</b><span>Testo</span></button><button data-add="brand"><b>GB /</b><span>Firma GymBro</span></button></div><p class="story-helper">Tocca un adesivo per aggiungerlo. Trascinalo direttamente sull'anteprima per posizionarlo.</p></div>
-        <div class="story-panel" id="panel-style"><div class="story-style-options"><button data-style="Pulito" class="active"><b>Ab</b><span>Pulito</span></button><button data-style="GymBro"><b style="color:#c3ff3d">GB</b><span>GymBro</span></button><button data-style="Contorno"><b style="-webkit-text-stroke:1px white;color:transparent">Ab</b><span>Contorno</span></button><button data-style="Editoriale"><b style="font-family:Georgia,serif">Ab</b><span>Editoriale</span></button></div><div class="story-selected-tools"><label>Testo adesivo<input id="stickerTextInput" type="text" maxlength="80" placeholder="Scrivi il testo"></label><label>Colore testo<select id="stickerColor"><option value="#ffffff">Bianco</option><option value="#c3ff3d">GymBro lime</option><option value="#111111">Nero</option></select></label><label>Dimensione<input id="stickerSize" type="range" min="12" max="88" value="34"></label><button class="secondary" id="deleteSticker">Elimina adesivo selezionato</button></div></div>
-      </div>
-      <footer class="story-editor-footer"><button class="secondary" id="downloadStoryImage">↓ Salva</button><button class="primary" id="shareStoryImage">Condividi ↗</button></footer>
-      <p class="story-editor-note">*Le calorie sono modificabili solo se hai un dato disponibile. Instagram potrebbe richiedere di selezionare la storia dal rullino.</p>
+    renderStoryChooser();
+  }
+  function renderStoryChooser(){
+    const r=storyRecord;if(!r)return;
+    const cards=STORY_TEMPLATES.map(t=>`<button class="lyfta-template-card ${storyTemplate===t.id?"active":""}" data-template="${t.id}"><span class="lyfta-template-preview ${t.id}"><b>${t.id==="photo"?"＋":t.id==="anatomy"?"FITNESS":t.id==="editorial"?"Workout":t.id==="minimal"?`${Math.round(r.volume).toLocaleString("it-IT")} kg`:formatTime(r.duration)}</b><small>${t.id==="anatomy"?`${r.exercisesCompleted} esercizi`:t.id==="photo"?"Scegli foto":t.id==="editorial"?(r.planName||"Allenamento"):`${r.setsCompleted} serie`}</small></span><strong>${t.name}</strong><small>${t.caption}</small></button>`).join("");
+    openModal(`<div class="lyfta-share-flow" id="lyftaShareFlow">
+      <header class="lyfta-top"><button class="lyfta-round" id="storyBack" aria-label="Indietro">×</button><div><strong>Condividi allenamento</strong><small>Seleziona uno stile per la tua Storia</small></div><button class="lyfta-round" id="storyPhotoQuick" aria-label="Scegli foto">＋</button></header>
+      <div class="lyfta-chooser-content"><div class="lyfta-preview-wrap"><div class="lyfta-mini-story" id="chooserPreview"><div class="lyfta-mini-photo"></div><div class="lyfta-mini-copy"><small>${escapeHTML(new Date(r.endedAt).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"}))}</small><h2>${escapeHTML(r.planName||"Allenamento")}</h2><strong>${formatTime(r.duration)}</strong><p>${Math.round(r.volume).toLocaleString("it-IT")} kg <span>·</span> ${r.setsCompleted} serie</p><small>GYMBRO /</small></div></div></div>
+      <div class="lyfta-template-head"><strong>Modelli per la Storia</strong><button class="lyfta-text-button" id="browseTemplates">Vedi tutti</button></div><div class="lyfta-template-rail">${cards}</div>
+      <button class="lyfta-photo-row" id="choosePhoto"><span class="lyfta-photo-icon">▧</span><span><b>Usa una foto personalizzata</b><small>La foto diventa lo sfondo della Storia</small></span><span>›</span></button><input id="storyPhotoInput" type="file" accept="image/*" hidden>
+      </div><footer class="lyfta-share-footer"><button class="lyfta-share-button" id="openStoryEditor">↗　Condividi</button><button class="lyfta-add-button" id="addStorySticker" aria-label="Aggiungi adesivi">＋</button></footer>
     </div>`);
-    const sc=$("#storyCanvas");
-    const selectSticker=(id)=>{selectedSticker=storyStickers.findIndex(s=>s.id===id);if(selectedSticker<0)selectedSticker=0;syncStickerTools();drawStoryGraphic();};
-    const syncStickerTools=()=>{const st=storyStickers[selectedSticker];if(!st)return;$("#stickerSize").value=String(st.size);$("#stickerColor").value=st.color||"#ffffff";$("#stickerTextInput").value=st.text||stickerText(st,r)||"";};
-    const switchPanel=name=>{$$(".story-tab").forEach(b=>b.classList.toggle("active",b.dataset.panel===name));$$(".story-panel").forEach(p=>p.classList.toggle("active",p.id===`panel-${name}`));};
-    $$(".story-tab").forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
-    $("#storyBack").onclick=()=>closeModal();$("#storyDone").onclick=()=>{switchPanel("stickers");showToast("Seleziona e modifica gli adesivi, poi condividi la storia.");};
-    $("#storyPhotoInput").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{storyPhoto=await loadImage(URL.createObjectURL(f));drawStoryGraphic();}catch{showToast("Non riesco a leggere questa foto.");}});
-    $$("[data-bg]").forEach(b=>b.onclick=()=>{storyBg=b.dataset.bg;$$("[data-bg]").forEach(x=>x.classList.toggle("active",x===b));drawStoryGraphic();});
-    $$("[data-style]").forEach(b=>b.onclick=()=>{storyTemplate=b.dataset.style;$$("[data-style]").forEach(x=>x.classList.toggle("active",x===b));const st=storyStickers[selectedSticker];if(st)st.style=storyTemplate;drawStoryGraphic();});
-    $$("[data-add]").forEach(b=>b.onclick=()=>{const kind=b.dataset.add,st=makeStorySticker(kind,r,storyStickers.length);storyStickers.push(st);selectSticker(st.id);switchPanel("style");});
-    $("#stickerColor").onchange=e=>{const st=storyStickers[selectedSticker];if(st){st.color=e.target.value;drawStoryGraphic();}};
-    $("#stickerTextInput").oninput=e=>{const st=storyStickers[selectedSticker];if(st){st.text=e.target.value;if(st.kind!=="text"&&st.kind!=="brand")st.customText=e.target.value;drawStoryGraphic();}};
-    $("#stickerSize").oninput=e=>{const st=storyStickers[selectedSticker];if(st){st.size=Number(e.target.value);drawStoryGraphic();}};
-    $("#deleteSticker").onclick=()=>{if(!storyStickers.length)return;storyStickers.splice(selectedSticker,1);selectedSticker=Math.max(0,selectedSticker-1);syncStickerTools();drawStoryGraphic();};
+    $("#storyBack").onclick=()=>closeModal();
+    $("#storyPhotoQuick").onclick=()=>$("#storyPhotoInput").click();
+    $("#choosePhoto").onclick=()=>$("#storyPhotoInput").click();
+    $("#browseTemplates").onclick=()=>{$(".lyfta-template-rail")?.classList.toggle("expanded");};
+    $("#storyPhotoInput").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{storyPhoto=await loadImage(URL.createObjectURL(f));storyTemplate="photo";renderStoryEditor();}catch{showToast("Non riesco a leggere questa foto.");}});
+    $$("[data-template]").forEach(b=>b.onclick=()=>{storyTemplate=b.dataset.template;if(storyTemplate==="photo"){$("#storyPhotoInput").click();return;}if(storyTemplate==="classic")storyStickers=makePresetStickers(r,"classic");else storyStickers=makePresetStickers(r,storyTemplate);selectedSticker=0;drawChooserPreview();$$("[data-template]").forEach(x=>x.classList.toggle("active",x===b));});
+    $("#openStoryEditor").onclick=()=>renderStoryEditor();
+    $("#addStorySticker").onclick=()=>{storyScreen="chooser";renderStoryEditor(true);};
+    drawChooserPreview();
+  }
+  function drawChooserPreview(){
+    const el=$("#chooserPreview");if(!el)return;
+    el.classList.toggle("has-photo",!!storyPhoto);
+    if(storyPhoto){el.style.backgroundImage=`url("${storyPhoto.src}")`;el.querySelector(".lyfta-mini-photo").style.display="none";}
+    const r=storyRecord;
+    const copy=el.querySelector(".lyfta-mini-copy");
+    if(copy)copy.innerHTML=`<small>${escapeHTML(new Date(r.endedAt).toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"}))}</small><h2>${escapeHTML(r.planName||"Allenamento")}</h2><strong>${formatTime(r.duration)}</strong><p>${Math.round(r.volume).toLocaleString("it-IT")} kg <span>·</span> ${r.setsCompleted} serie</p><small>GYMBRO /</small>`;
+  }
+  function makePresetStickers(r,template){
+    const v=storyValues(r),white="#ffffff";
+    const make=(preset,lines,x,y,size)=>({id:uid(),kind:"block",label:preset,preset,lines,x,y,size,color:white,weight:600,style:template});
+    if(template==="minimal")return [make("Volume",[{text:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,size:1.05,color:white,weight:700},{text:"VOLUME TOTALE",size:.35,color:white,weight:500}],52,650,38)];
+    if(template==="editorial")return [make("Editoriale",[{text:r.planName||"Allenamento",size:.8,color:white,weight:600},{text:`${formatTime(r.duration)}  /  ${r.setsCompleted} serie`,size:.46,color:white,weight:500},{text:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,size:1,color:white,weight:700}],48,700,40)];
+    if(template==="anatomy")return [make("Performance",[{text:"SESSION COMPLETE",size:.36,color:white,weight:500},{text:`${r.exercisesCompleted} ESERCIZI`,size:.8,color:white,weight:700},{text:`${r.setsCompleted} SET  ·  ${r.reps} REP`,size:.48,color:white,weight:600}],42,700,38)];
+    return [make("Riepilogo",[{text:r.planName||"Allenamento",size:.72,color:white,weight:600},{text:formatTime(r.duration),size:1.12,color:white,weight:700},{text:`${Math.round(r.volume).toLocaleString("it-IT")} kg  ·  ${r.setsCompleted} serie`,size:.52,color:white,weight:500}],42,690,38)];
+  }
+  function renderStoryEditor(openStickerSheet=false){
+    const r=storyRecord;if(!r)return;storyScreen="editor";
+    openModal(`<div class="lyfta-story-editor" id="socialEditor">
+      <header class="lyfta-editor-top"><button class="lyfta-round" id="storyBack" aria-label="Indietro">×</button><div class="lyfta-top-actions"><button class="lyfta-round" id="storyUndo" aria-label="Ripristina modello">↶</button><button class="lyfta-round" id="storyPhotoQuick" aria-label="Cambia foto">▧</button></div><button class="lyfta-next" id="storyDone">Avanti</button></header>
+      <div class="lyfta-canvas-zone"><div class="lyfta-canvas-shell"><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima modificabile della Storia"></canvas></div><div class="lyfta-canvas-hint">Tocca un adesivo per selezionarlo · trascina per spostarlo · pizzica per ridimensionarlo</div></div>
+      <footer class="lyfta-tool-dock"><button data-tool="photo"><span>▧</span>Foto</button><button data-tool="templates"><span>▦</span>Modelli</button><button data-tool="stickers"><span>✧</span>Adesivi</button><button data-tool="text"><span>Tt</span>Testo</button><button data-tool="stats"><span>↗</span>Dati</button></footer>
+      <input id="storyPhotoInput" type="file" accept="image/*" hidden>
+      <div class="lyfta-sheet-backdrop" id="stickerBackdrop" hidden></div>
+      <section class="lyfta-bottom-sheet" id="stickerSheet" hidden><div class="lyfta-sheet-grabber"></div><div class="lyfta-sheet-head"><strong id="stickerSheetTitle">Adesivi</strong><button class="lyfta-round" id="closeStickerSheet">×</button></div><div class="lyfta-sheet-tabs"><button class="active" data-sticker-category="blocks">Riepiloghi</button><button data-sticker-category="stats">Statistiche</button><button data-sticker-category="text">Testo</button><button data-sticker-category="graphics">Grafica</button></div><div class="lyfta-sticker-picker" id="stickerPicker"></div></section>
+      <section class="lyfta-bottom-sheet" id="templateSheet" hidden><div class="lyfta-sheet-grabber"></div><div class="lyfta-sheet-head"><strong>Modelli Storia</strong><button class="lyfta-round" id="closeTemplateSheet">×</button></div><div class="lyfta-template-grid">${STORY_TEMPLATES.map(t=>`<button data-editor-template="${t.id}"><span class="lyfta-template-preview ${t.id}"><b>${t.name}</b><small>${t.caption}</small></span><strong>${t.name}</strong></button>`).join("")}</div></section>
+      <section class="lyfta-bottom-sheet" id="textSheet" hidden><div class="lyfta-sheet-grabber"></div><div class="lyfta-sheet-head"><strong>Testo</strong><button class="lyfta-round" id="closeTextSheet">×</button></div><label class="lyfta-text-entry">Scrivi il testo<input id="newStoryText" placeholder="Scrivi qualcosa..." maxlength="90"></label><div class="lyfta-text-presets"><button data-text-preset="Workout complete">Workout complete</button><button data-text-preset="Nuovo record!">Nuovo record!</button><button data-text-preset="Costanza.">Costanza.</button></div><button class="lyfta-share-button" id="addCustomText">Aggiungi testo</button></section>
+      <section class="lyfta-bottom-sheet" id="shareSheet" hidden><div class="lyfta-sheet-grabber"></div><div class="lyfta-sheet-head"><strong>Condividi Storia</strong><button class="lyfta-round" id="closeShareSheet">×</button></div><div class="lyfta-share-options"><button id="shareInstagram">Instagram Stories <span>↗</span></button><button id="saveStoryImage">Salva immagine <span>↓</span></button><button id="nativeShareStory">Altre opzioni di condivisione <span>•••</span></button></div></section>
+    </div>`);
+    const canvas=$("#storyCanvas");
+    const closeSheet=()=>{$$("#socialEditor .lyfta-bottom-sheet").forEach(x=>x.hidden=true);$("#stickerBackdrop").hidden=true;};
+    const openSheet=id=>{closeSheet();$("#stickerBackdrop").hidden=false;$("#"+id).hidden=false;};
+    const switchStickerCategory=cat=>{const root=$("#stickerPicker");if(!root)return;$$("[data-sticker-category]").forEach(b=>b.classList.toggle("active",b.dataset.stickerCategory===cat));const list=cat==="blocks"?[["summaryBlock","Riepilogo"],["volumeBlock","Volume + serie"],["performanceBlock","Performance"],["exerciseBlock","Esercizi"]]:cat==="stats"?[["duration","Durata"],["volume","Volume"],["sets","Serie"],["reps","Ripetizioni"],["exercises","Esercizi"],["calories","Calorie"]]:cat==="text"?[["title","Testo libero"],["brand","Firma GymBro"]]:[["badge","Badge"],["check","Obiettivo"],["star","Record personale"]];root.innerHTML=list.map(([kind,label])=>`<button data-add="${kind}"><span class="lyfta-sticker-thumb">${kind==="summaryBlock"?"1h 35m":kind==="volumeBlock"?"3620 kg":kind==="performanceBlock"?"33 SET":label==="Testo libero"?"Tt":label==="Firma GymBro"?"GYMBRO /":label}</span><small>${label}</small></button>`).join("");$$("[data-add]").forEach(b=>b.onclick=()=>{const st=makeStorySticker(b.dataset.add,r,storyStickers.length);storyStickers.push(st);selectedSticker=storyStickers.length-1;drawStoryGraphic();closeSheet();});};
+    const choosePhoto=()=>$("#storyPhotoInput").click();
+    $("#storyBack").onclick=()=>{if(storyScreen==="editor")renderStoryChooser();else closeModal();};
+    $("#storyPhotoQuick").onclick=choosePhoto;
+    $("#storyPhotoInput").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{storyPhoto=await loadImage(URL.createObjectURL(f));drawStoryGraphic();}catch{showToast("Impossibile caricare la foto.");}});
+    $("#storyUndo").onclick=()=>{storyStickers=makePresetStickers(r,storyTemplate==="photo"?"classic":storyTemplate);selectedSticker=0;drawStoryGraphic();};
+    $("#storyDone").onclick=()=>openSheet("shareSheet");
+    $("#stickerBackdrop").onclick=closeSheet;
+    $("#closeStickerSheet").onclick=closeSheet;$("#closeTemplateSheet").onclick=closeSheet;$("#closeTextSheet").onclick=closeSheet;$("#closeShareSheet").onclick=closeSheet;
+    $$("[data-sticker-category]").forEach(b=>b.onclick=()=>switchStickerCategory(b.dataset.stickerCategory));
+    $$("[data-tool]").forEach(b=>b.onclick=()=>{const tool=b.dataset.tool;if(tool==="photo")choosePhoto();if(tool==="stickers"){switchStickerCategory("blocks");openSheet("stickerSheet");}if(tool==="templates")openSheet("templateSheet");if(tool==="text")openSheet("textSheet");if(tool==="stats"){switchStickerCategory("stats");openSheet("stickerSheet");}});
+    $$("[data-editor-template]").forEach(b=>b.onclick=()=>{storyTemplate=b.dataset.editorTemplate;if(storyTemplate==="photo"){closeSheet();choosePhoto();return;}storyStickers=makePresetStickers(r,storyTemplate);selectedSticker=0;drawStoryGraphic();closeSheet();});
+    $$("[data-text-preset]").forEach(b=>b.onclick=()=>{$("#newStoryText").value=b.dataset.textPreset;});
+    $("#addCustomText").onclick=()=>{const text=$("#newStoryText").value.trim()||"Scrivi qualcosa…";const st=makeStorySticker("title",r,storyStickers.length);st.text=text;st.x=42;st.y=480;st.size=36;storyStickers.push(st);selectedSticker=storyStickers.length-1;drawStoryGraphic();closeSheet();};
+    $("#saveStoryImage").onclick=async()=>{closeSheet();await downloadStoryImage();};
+    $("#shareInstagram").onclick=async()=>{closeSheet();await shareStoryImage();};
+    $("#nativeShareStory").onclick=async()=>{closeSheet();await shareStoryImage();};
+    switchStickerCategory(openStickerSheet?"blocks":"blocks");
     const activePointers=new Map();let drag=null,pinch=null;
-    const canvasPoint=e=>{const rect=sc.getBoundingClientRect();return {x:(e.clientX-rect.left)*sc.width/rect.width,y:(e.clientY-rect.top)*sc.height/rect.height};};
+    const canvasPoint=e=>{const rect=canvas.getBoundingClientRect();return {x:(e.clientX-rect.left)*canvas.width/rect.width,y:(e.clientY-rect.top)*canvas.height/rect.height};};
     const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-    sc.addEventListener("pointerdown",e=>{
-      const pt=canvasPoint(e);activePointers.set(e.pointerId,pt);
+    canvas.addEventListener("pointerdown",e=>{
+      const pt=canvasPoint(e);activePointers.set(e.pointerId,pt);try{canvas.setPointerCapture(e.pointerId);}catch{}
       if(activePointers.size===2){const pts=[...activePointers.values()];const st=storyStickers[selectedSticker];if(st){pinch={startDistance:Math.max(1,distance(pts[0],pts[1])),startSize:st.size};drag=null;}e.preventDefault();return;}
-      let idx=-1;for(let i=storyStickers.length-1;i>=0;i--){const box=stickerBounds(sc.getContext("2d"),storyStickers[i]);if(pt.x>=box.x-28&&pt.x<=box.x+box.w+28&&pt.y>=box.y-28&&pt.y<=box.y+box.h+28){idx=i;break;}}
-      if(idx<0)return;selectedSticker=idx;const st=storyStickers[idx];drag={pointerId:e.pointerId,x:pt.x,y:pt.y,sx:st.x,sy:st.y,size:st.size};pinch=null;syncStickerTools();drawStoryGraphic();e.preventDefault();
-    });
-    sc.addEventListener("pointermove",e=>{
+      let idx=-1;for(let i=storyStickers.length-1;i>=0;i--){const box=stickerBounds(canvas.getContext("2d"),storyStickers[i]);if(pt.x>=box.x-32&&pt.x<=box.x+box.w+32&&pt.y>=box.y-32&&pt.y<=box.y+box.h+32){idx=i;break;}}
+      if(idx<0)return;selectedSticker=idx;const st=storyStickers[idx];drag={pointerId:e.pointerId,x:pt.x,y:pt.y,sx:st.x,sy:st.y};pinch=null;drawStoryGraphic();e.preventDefault();
+    },{passive:false});
+    canvas.addEventListener("pointermove",e=>{
       if(!activePointers.has(e.pointerId))return;activePointers.set(e.pointerId,canvasPoint(e));const st=storyStickers[selectedSticker];if(!st)return;
-      if(activePointers.size>=2){const pts=[...activePointers.values()];if(!pinch)pinch={startDistance:Math.max(1,distance(pts[0],pts[1])),startSize:st.size};const factor=distance(pts[0],pts[1])/pinch.startDistance;st.size=Math.max(12,Math.min(160,pinch.startSize*factor));const slider=$("#stickerSize");if(slider)slider.value=String(Math.max(12,Math.min(88,st.size)));drawStoryGraphic();e.preventDefault();return;}
-      if(!drag||drag.pointerId!==e.pointerId)return;const pt=canvasPoint(e);st.x=Math.max(0,Math.min(520,drag.sx+pt.x-drag.x));st.y=Math.max(20,Math.min(940,drag.sy+pt.y-drag.y));drawStoryGraphic();e.preventDefault();
-    });
-    const endPointer=e=>{activePointers.delete(e.pointerId);if(activePointers.size<2)pinch=null;if(drag&&drag.pointerId===e.pointerId)drag=null;};sc.addEventListener("pointerup",endPointer);sc.addEventListener("pointercancel",endPointer);
-    sc.addEventListener("dblclick",()=>{switchPanel("style");});
-    $("#shareStoryImage").onclick=shareStoryImage;$("#downloadStoryImage").onclick=downloadStoryImage;
-    drawStoryGraphic();syncStickerTools();
+      if(activePointers.size>=2){const pts=[...activePointers.values()];if(!pinch)pinch={startDistance:Math.max(1,distance(pts[0],pts[1])),startSize:st.size};const factor=distance(pts[0],pts[1])/pinch.startDistance;st.size=Math.max(12,Math.min(130,pinch.startSize*factor));drawStoryGraphic();e.preventDefault();return;}
+      if(!drag||drag.pointerId!==e.pointerId)return;const pt=canvasPoint(e);st.x=Math.max(4,Math.min(canvas.width-40,drag.sx+pt.x-drag.x));st.y=Math.max(30,Math.min(canvas.height-18,drag.sy+pt.y-drag.y));drawStoryGraphic();e.preventDefault();
+    },{passive:false});
+    const endPointer=e=>{activePointers.delete(e.pointerId);if(activePointers.size<2)pinch=null;if(drag&&drag.pointerId===e.pointerId)drag=null;};
+    canvas.addEventListener("pointerup",endPointer);canvas.addEventListener("pointercancel",endPointer);canvas.addEventListener("lostpointercapture",endPointer);
+    canvas.addEventListener("dblclick",()=>openSheet("textSheet"));
+    drawStoryGraphic();if(openStickerSheet)openSheet("stickerSheet");
   }
   function uid(){return "st"+Math.random().toString(36).slice(2,10);}
   function storyValues(r){return {DURATA:formatTime(r.duration),VOLUME:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,SERIE:`${r.setsCompleted}/${r.setsPlanned}`,RIPETIZIONI:String(r.reps),ESERCIZI:String(r.exercisesCompleted),CALORIE:"—"};}
@@ -333,17 +384,17 @@
     if(kind==="summaryBlock")d={label:"Riepilogo",kind:"block",size:52,color:"#ffffff",lines:[{text:r.planName||"ALLENAMENTO",size:0.72,color:"#ffffff",weight:700},{text:v.DURATA,size:1.15,color:"#c3ff3d",weight:700},{text:`${v.ESERCIZI} esercizi  ·  ${v.SERIE} serie`,size:0.52,color:"#ffffff",weight:500}]};
     else if(kind==="volumeBlock")d={label:"Volume + serie",kind:"block",size:52,color:"#ffffff",lines:[{text:"VOLUME",size:0.48,color:"#ffffff",weight:600},{text:v.VOLUME,size:1.05,color:"#c3ff3d",weight:700},{text:`${v.SERIE} serie completate`,size:0.55,color:"#ffffff",weight:500}]};
     else if(kind==="performanceBlock")d={label:"Performance",kind:"block",size:52,color:"#ffffff",lines:[{text:"PERFORMANCE",size:0.48,color:"#ffffff",weight:600},{text:`${v.SERIE} serie`,size:0.85,color:"#ffffff",weight:700},{text:`${v.RIPETIZIONI} ripetizioni`,size:0.85,color:"#c3ff3d",weight:700}]};
-    else {const defaults={duration:{label:"Durata",text:v.DURATA,stat:"DURATA",size:30,color:"#ffffff"},volume:{label:"Volume",text:v.VOLUME,stat:"VOLUME",size:42,color:"#c3ff3d"},sets:{label:"Serie",text:v.SERIE,stat:"SERIE",size:42,color:"#ffffff"},reps:{label:"Ripetizioni",text:v.RIPETIZIONI,stat:"RIPETIZIONI",size:42,color:"#ffffff"},exercises:{label:"Esercizi",text:v.ESERCIZI,stat:"ESERCIZI",size:42,color:"#ffffff"},calories:{label:"Calorie",text:v.CALORIE,stat:"CALORIE",size:34,color:"#ffffff"},title:{label:"Testo",text:"Scrivi qualcosa…",size:34,color:"#ffffff"},brand:{label:"Firma GymBro",text:"GYMBRO /",size:24,color:"#c3ff3d"}};d=defaults[kind]||defaults.title;}
+    else {const defaults={badge:{label:"Badge",text:"GYMBRO /",size:26,color:"#ffffff"},check:{label:"Obiettivo",text:"OBIETTIVO RAGGIUNTO",size:22,color:"#ffffff"},star:{label:"Record personale",text:"NUOVO RECORD",size:26,color:"#ffffff"},exerciseBlock:{label:"Esercizi",text:`${r.exercisesCompleted} ESERCIZI`,size:30,color:"#ffffff"},duration:{label:"Durata",text:v.DURATA,stat:"DURATA",size:30,color:"#ffffff"},volume:{label:"Volume",text:v.VOLUME,stat:"VOLUME",size:42,color:"#ffffff"},sets:{label:"Serie",text:v.SERIE,stat:"SERIE",size:42,color:"#ffffff"},reps:{label:"Ripetizioni",text:v.RIPETIZIONI,stat:"RIPETIZIONI",size:42,color:"#ffffff"},exercises:{label:"Esercizi",text:v.ESERCIZI,stat:"ESERCIZI",size:42,color:"#ffffff"},calories:{label:"Calorie",text:v.CALORIE,stat:"CALORIE",size:34,color:"#ffffff"},title:{label:"Testo",text:"Scrivi qualcosa…",size:34,color:"#ffffff"},brand:{label:"Firma GymBro",text:"GYMBRO /",size:24,color:"#c3ff3d"}};d=defaults[kind]||defaults.title;}
     return {id:uid(),kind:kind==="title"?"text":kind,label:d.label,text:d.text||"",stat:d.stat||null,lines:d.lines||null,x:48+(index%2)*60,y:420+(index%4)*65,size:d.size,color:d.color,weight:700,style:storyTemplate};
   }
   function stickerText(st,r){if(st.customText)return st.customText;if(st.kind==="text")return st.text;if(st.kind==="brand")return "GYMBRO /";const v=storyValues(r);return v[st.stat]??st.text;}
-  function stickerBounds(ctx,st){ctx.save();let w=40,h=st.size*1.25;if(st.lines){h=0;w=0;for(const line of st.lines){ctx.font=`${line.weight||700} ${Math.max(12,st.size*line.size)}px ${st.style==="Editoriale"?"Georgia,serif":"Arial,sans-serif"}`;w=Math.max(w,ctx.measureText(line.text).width);h+=Math.max(16,st.size*line.size*1.28);}}else{ctx.font=`${st.weight||700} ${st.size}px ${st.style==="Editoriale"?"Georgia,serif":"Arial,sans-serif"}`;w=Math.max(40,ctx.measureText(stickerText(st,storyRecord)).width+8);h=st.size*1.25;}ctx.restore();return {x:st.x,y:st.y-h,w,h};}
+  function stickerBounds(ctx,st){ctx.save();let w=40,h=st.size*1.25;if(st.lines){h=0;w=0;for(const line of st.lines){ctx.font=`${line.weight||700} ${Math.max(12,st.size*line.size)}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;w=Math.max(w,ctx.measureText(line.text).width);h+=Math.max(16,st.size*line.size*1.28);}}else{ctx.font=`${st.weight||700} ${st.size}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;w=Math.max(40,ctx.measureText(stickerText(st,storyRecord)).width+8);h=st.size*1.25;}ctx.restore();return {x:st.x,y:st.y-h,w,h};}
   function drawStoryGraphic(showHandles=true,targetCanvas=null){
     const canvas=targetCanvas||$("#storyCanvas");if(!canvas||!storyRecord)return;const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,r=storyRecord;ctx.clearRect(0,0,w,h);
     if(storyPhoto){const scale=Math.max(w/storyPhoto.width,h/storyPhoto.height),iw=storyPhoto.width*scale,ih=storyPhoto.height*scale;ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);}else{ctx.fillStyle=storyBg;ctx.fillRect(0,0,w,h);if(storyBg!=="#c3ff3d"){const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#28321e55");g.addColorStop(1,"#05060622");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}}
     storyStickers.forEach((st,i)=>{ctx.save();ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.shadowColor=storyPhoto?"rgba(0,0,0,.55)":"transparent";ctx.shadowBlur=storyPhoto?5:0;ctx.shadowOffsetY=1;
-      if(st.lines){const total=stickerBounds(ctx,st).h;let yy=st.y-total;for(const line of st.lines){const size=Math.max(10,st.size*line.size);ctx.font=`${line.weight||700} ${size}px ${st.style==="Editoriale"?"Georgia,serif":"Arial,sans-serif"}`;ctx.fillStyle=line.color||st.color||"#ffffff";yy+=size;ctx.fillText(line.text,st.x,yy);yy+=Math.max(16,size*0.28);}}
-      else{const text=stickerText(st,r),size=Math.max(10,st.size);ctx.font=`${st.weight||700} ${size}px ${st.style==="Editoriale"?"Georgia,serif":"Arial,sans-serif"}`;if(st.style==="Contorno"){ctx.lineWidth=Math.max(1,size/22);ctx.strokeStyle=st.color;ctx.strokeText(text,st.x,st.y);}else{ctx.fillStyle=st.style==="GymBro"&&st.kind==="title"?"#c3ff3d":st.color||"#ffffff";ctx.fillText(text,st.x,st.y);}}
+      if(st.lines){const total=stickerBounds(ctx,st).h;let yy=st.y-total;for(const line of st.lines){const size=Math.max(10,st.size*line.size);ctx.font=`${line.weight||700} ${size}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;ctx.fillStyle=line.color||st.color||"#ffffff";yy+=size;ctx.fillText(line.text,st.x,yy);yy+=Math.max(16,size*0.28);}}
+      else{const text=stickerText(st,r),size=Math.max(10,st.size);ctx.font=`${st.weight||700} ${size}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;if(st.style==="Contorno"){ctx.lineWidth=Math.max(1,size/22);ctx.strokeStyle=st.color;ctx.strokeText(text,st.x,st.y);}else{ctx.fillStyle=st.style==="GymBro"&&st.kind==="title"?"#c3ff3d":st.color||"#ffffff";ctx.fillText(text,st.x,st.y);}}
       ctx.restore();if(showHandles&&i===selectedSticker){const b=stickerBounds(ctx,st);ctx.save();ctx.strokeStyle="#c3ff3d";ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.strokeRect(b.x-6,b.y-6,b.w+12,b.h+12);ctx.setLineDash([]);ctx.fillStyle="#c3ff3d";ctx.beginPath();ctx.arc(b.x+b.w+8,b.y+b.h+8,13,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#111315";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.x+b.w+2,b.y+b.h+14);ctx.lineTo(b.x+b.w+14,b.y+b.h+2);ctx.stroke();ctx.restore();}});
     if(showHandles){ctx.save();ctx.fillStyle="#c3ff3d";ctx.font="bold 14px Arial";ctx.fillText("GYMBRO / TRACCIA. SPINGI. MIGLIORA.",28,h-28);ctx.restore();}
   }
@@ -362,7 +413,47 @@
   function escapeHTML(str){return String(str??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   function addSet(ei){const e=state.session?.exercises[ei];if(!e)return;e.setsLog.push({done:false,weight:Number(e.weight)||0,reps:Number(e.reps)||1});persist();renderSession();}
   function moveSessionExercise(from,to){const s=state.session;if(!s||from<0||to<0||from>=s.exercises.length||to>=s.exercises.length||from===to)return;const [item]=s.exercises.splice(from,1);s.exercises.splice(to,0,item);const plan=state.plans.find(p=>p.id===s.planId);if(plan){const byId=new Map(plan.exercises.map(e=>[e.id,e]));const ordered=s.exercises.map(e=>byId.get(e.id)).filter(Boolean);plan.exercises=[...ordered,...plan.exercises.filter(e=>!ordered.some(x=>x.id===e.id))];}persist();renderSession();}
-  function reorderByPointer(container,getList,render){let from=null,pointerId=null;container.addEventListener("pointerdown",e=>{const grip=e.target.closest(".drag-handle");if(!grip)return;const card=grip.closest("[data-reorder-index]");if(!card)return;from=Number(card.dataset.reorderIndex);pointerId=e.pointerId;card.classList.add("is-dragging");document.body.classList.add("reordering-exercises");e.preventDefault();});document.addEventListener("pointermove",e=>{if(from===null||e.pointerId!==pointerId)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-reorder-index]");container.querySelectorAll("[data-reorder-index]").forEach(c=>c.classList.toggle("drop-target",c===target&&Number(c.dataset.reorderIndex)!==from));e.preventDefault();},{passive:false});const finish=e=>{if(from===null||e.pointerId!==pointerId)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-reorder-index]");const to=target?Number(target.dataset.reorderIndex):from;const list=getList();container.querySelectorAll(".is-dragging,.drop-target").forEach(c=>c.classList.remove("is-dragging","drop-target"));document.body.classList.remove("reordering-exercises");if(target&&to!==from&&list[from]!==undefined){const [item]=list.splice(from,1);list.splice(Math.max(0,Math.min(list.length,to)),0,item);render();persist();showToast("Ordine degli esercizi aggiornato.");}from=null;pointerId=null;};document.addEventListener("pointerup",finish);document.addEventListener("pointercancel",finish);}
+  function reorderByPointer(container,getList,render){
+    if(!container)return;
+    let from=null,pointerId=null,lastY=0,lastX=0,autoFrame=0;
+    const stopAuto=()=>{if(autoFrame)cancelAnimationFrame(autoFrame);autoFrame=0;};
+    const autoScroll=()=>{
+      if(from===null)return;
+      const edge=100;let delta=0;
+      if(lastY<edge)delta=-Math.max(3,Math.round((edge-lastY)/7));
+      else if(lastY>window.innerHeight-edge)delta=Math.max(3,Math.round((lastY-(window.innerHeight-edge))/7));
+      if(delta){
+        window.scrollBy(0,delta);
+        const target=document.elementFromPoint(lastX,Math.max(0,Math.min(window.innerHeight-1,lastY)))?.closest?.("[data-reorder-index]");
+        container.querySelectorAll("[data-reorder-index]").forEach(c=>c.classList.toggle("drop-target",c===target&&Number(c.dataset.reorderIndex)!==from));
+      }
+      autoFrame=requestAnimationFrame(autoScroll);
+    };
+    container.addEventListener("pointerdown",e=>{
+      const grip=e.target.closest(".drag-handle");if(!grip)return;
+      const card=grip.closest("[data-reorder-index]");if(!card)return;
+      from=Number(card.dataset.reorderIndex);pointerId=e.pointerId;lastY=e.clientY;lastX=e.clientX;
+      card.classList.add("is-dragging");document.body.classList.add("reordering-exercises");
+      try{grip.setPointerCapture(e.pointerId);}catch{}
+      autoFrame=requestAnimationFrame(autoScroll);e.preventDefault();
+    });
+    document.addEventListener("pointermove",e=>{
+      if(from===null||e.pointerId!==pointerId)return;
+      lastY=e.clientY;lastX=e.clientX;
+      const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-reorder-index]");
+      container.querySelectorAll("[data-reorder-index]").forEach(c=>c.classList.toggle("drop-target",c===target&&Number(c.dataset.reorderIndex)!==from));
+      e.preventDefault();
+    },{passive:false});
+    const finish=e=>{
+      if(from===null||e.pointerId!==pointerId)return;
+      const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-reorder-index]");
+      const list=getList(),original=from;let to=target?Number(target.dataset.reorderIndex):from;
+      stopAuto();container.querySelectorAll(".is-dragging,.drop-target").forEach(c=>c.classList.remove("is-dragging","drop-target"));document.body.classList.remove("reordering-exercises");
+      if(target&&to!==original&&list[original]!==undefined){const [item]=list.splice(original,1);list.splice(Math.max(0,Math.min(list.length,to)),0,item);render();persist();showToast("Ordine degli esercizi aggiornato.");}
+      from=null;pointerId=null;
+    };
+    document.addEventListener("pointerup",finish);document.addEventListener("pointercancel",finish);
+  }
   function deleteSessionExercise(ei){const s=state.session;if(!s)return;if(!confirm(`Eliminare ${s.exercises[ei].name} dalla sessione?`))return;s.exercises.splice(ei,1);persist();renderSession();}
   function handleAction(target){
     const action=target.dataset.action;if(!action)return;
