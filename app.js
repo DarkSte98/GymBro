@@ -80,9 +80,18 @@
     $("#plansList").innerHTML=state.plans.length?state.plans.map(planCardHTML).join(""):'<div class="empty"><strong>Ancora nessuna scheda</strong>Crea la tua prima scheda o genera una base in base ai tuoi obiettivi.</div>';
   }
   function renderLibrary(){
-    const q=($("#exerciseSearch").value||"").toLowerCase().trim(), muscle=$("#muscleFilter").value, equipment=$("#equipmentFilter").value;
-    const items=availableExercises().filter(e=>(!q||`${e.name} ${e.muscle} ${e.secondary}`.toLowerCase().includes(q))&&(!muscle||e.muscle===muscle)&&(!equipment||e.equipment===equipment));
-    $("#libraryList").innerHTML=items.length?items.map(e=>`<article class="exercise-card"><div class="card-head"><div><div class="muscle">${e.muscle}</div><p class="card-title" style="margin-top:6px">${escapeHTML(e.name)}</p><div class="muted">Secondari: ${escapeHTML(e.secondary||"—")} · ${equipmentLabels[e.equipment]}</div></div><span class="tag">${e.level}</span></div><div class="tag-row"><span class="tag">${e.sets} serie × ${e.reps} ${e.isTime?"sec":"rip."}</span><span class="tag">Recupero ${e.rest}s</span></div><div class="card-actions"><button class="secondary" data-action="exercise-info" data-id="${e.id}">Dettagli</button><button class="primary compact" data-action="add-to-plan" data-id="${e.id}">Aggiungi a scheda</button></div></article>`).join(""):'<div class="empty"><strong>Nessun esercizio trovato</strong>Prova a cambiare i filtri o seleziona più attrezzatura nel profilo.</div>';
+    const q=( $("#exerciseSearch")?.value||"").toLowerCase().trim(), muscle=$("#muscleFilter")?.value||"";
+    const items=availableExercises().filter(e=>{
+      const searchable=`${e.name} ${e.muscle} ${e.secondary}`.toLowerCase();
+      const muscleMatch=!muscle||e.muscle===muscle||String(e.secondary||"").toLowerCase().split(/[,·]/).map(x=>x.trim()).includes(muscle.toLowerCase())||(muscle==="Gambe"&&["Femorali","Quadricipiti","Polpacci"].includes(e.muscle));
+      return (!q||searchable.includes(q))&&muscleMatch;
+    });
+    const list=$("#libraryList");
+    if(!list)return;
+    list.innerHTML=items.length?items.map(e=>`<article class="exercise-card"><div class="card-head"><div><div class="muscle">${e.muscle}</div><p class="card-title" style="margin-top:6px">${escapeHTML(e.name)}</p><div class="muted">Secondari: ${escapeHTML(e.secondary||"—")} · ${equipmentLabels[e.equipment]}</div></div><span class="tag">${e.level}</span></div><div class="tag-row"><span class="tag">${e.sets} serie × ${e.reps} ${e.isTime?"sec":"rip."}</span><span class="tag">Recupero ${e.rest}s</span></div><div class="card-actions"><button class="secondary" data-action="exercise-info" data-id="${e.id}">Dettagli</button><button class="primary compact" data-action="add-to-plan" data-id="${e.id}">Aggiungi a scheda</button></div></article>`).join(""):'<div class="empty"><strong>Nessun esercizio trovato</strong>Questa selezione non ha esercizi compatibili con l’attrezzatura salvata nel profilo.</div>';
+    const count=$("#libraryResultCount");if(count)count.textContent=`${items.length} ${items.length===1?"esercizio":"esercizi"}`;
+    $$('[data-muscle-select]').forEach(b=>b.classList.toggle('active',b.dataset.muscleSelect===muscle));
+    $$('.muscle-zones [data-muscle]').forEach(z=>z.classList.toggle('selected',z.dataset.muscle===muscle||(muscle==="Gambe"&&["Femorali","Quadricipiti","Polpacci"].includes(z.dataset.muscle))));
   }
   function renderHistory(){
     const root=$("#historyList");
@@ -95,8 +104,11 @@
   }
   function saveProfile(ev){
     ev.preventDefault();const f=$("#profileForm");
-    state.profile={name:f.elements.name.value.trim(),goal:f.elements.goal.value,level:f.elements.level.value,days:Number(f.elements.days.value),equipment:$$('input[name="equipment"]:checked',f).map(i=>i.value)};
-    persist();showToast("Profilo salvato.");go("homeView");
+    const equipment=$$('input[name="equipment"]:checked',f).map(i=>i.value);
+    if(!equipment.length){showToast("Seleziona almeno un'attrezzatura disponibile.");return;}
+    state.profile={name:f.elements.name.value.trim(),goal:f.elements.goal.value,level:f.elements.level.value,days:Number(f.elements.days.value),equipment};
+    state.profileConfigured=true;
+    persist();renderLibrary();showToast("Profilo salvato. Il catalogo è stato aggiornato.");go("homeView");
   }
   function openPlanEditor(plan=null){
     editingPlanId=plan?.id||null;editorExerciseIds=plan?plan.exercises.map(e=>e.id):[];
@@ -335,8 +347,8 @@
       <section class="lyfta-bottom-sheet" id="shareSheet" hidden><div class="lyfta-sheet-grabber"></div><div class="lyfta-sheet-head"><strong>Condividi Storia</strong><button class="lyfta-round" id="closeShareSheet">×</button></div><div class="lyfta-share-options"><button id="shareInstagram">Instagram Stories <span>↗</span></button><button id="saveStoryImage">Salva immagine <span>↓</span></button><button id="nativeShareStory">Altre opzioni di condivisione <span>•••</span></button></div></section>
     </div>`);
     const canvas=$("#storyCanvas");
-    const closeSheet=()=>{$$("#socialEditor .lyfta-bottom-sheet").forEach(x=>x.hidden=true);$("#stickerBackdrop").hidden=true;};
-    const openSheet=id=>{closeSheet();$("#stickerBackdrop").hidden=false;const sheet=$("#"+id);sheet.hidden=false;sheet.style.transform="translateY(0)";};
+    const closeSheet=()=>{$$("#socialEditor .lyfta-bottom-sheet").forEach(x=>{x.classList.remove("sheet-open");x.style.transform="translateY(100%)";setTimeout(()=>{if(!x.classList.contains("sheet-open"))x.hidden=true;},250);});const backdrop=$("#stickerBackdrop");backdrop.classList.remove("visible");setTimeout(()=>{if(!$$("#socialEditor .lyfta-bottom-sheet").some(x=>!x.hidden))backdrop.hidden=true;},210);};
+    const openSheet=id=>{closeSheet();const backdrop=$("#stickerBackdrop");backdrop.hidden=false;requestAnimationFrame(()=>backdrop.classList.add("visible"));const sheet=$("#"+id);sheet.hidden=false;sheet.style.transform="translateY(100%)";requestAnimationFrame(()=>requestAnimationFrame(()=>{sheet.classList.add("sheet-open");sheet.style.transform="translateY(0)";}));};
     $$(".lyfta-sheet-grabber").forEach(grabber=>{let startY=0,active=false;grabber.addEventListener("pointerdown",e=>{startY=e.clientY;active=true;grabber.setPointerCapture?.(e.pointerId);});grabber.addEventListener("pointermove",e=>{if(!active)return;const dy=Math.max(0,e.clientY-startY);const sheet=grabber.closest(".lyfta-bottom-sheet");sheet.style.transform=`translateY(${dy}px)`;});const end=e=>{if(!active)return;active=false;const dy=e.clientY-startY;const sheet=grabber.closest(".lyfta-bottom-sheet");if(dy>80)closeSheet();else sheet.style.transform="translateY(0)";};grabber.addEventListener("pointerup",end);grabber.addEventListener("pointercancel",end);});
     const switchStickerCategory=cat=>{
       const root=$("#stickerPicker");if(!root)return;
@@ -460,42 +472,54 @@
   function moveSessionExercise(from,to){const s=state.session;if(!s||from<0||to<0||from>=s.exercises.length||to>=s.exercises.length||from===to)return;const [item]=s.exercises.splice(from,1);s.exercises.splice(to,0,item);const plan=state.plans.find(p=>p.id===s.planId);if(plan){const byId=new Map(plan.exercises.map(e=>[e.id,e]));const ordered=s.exercises.map(e=>byId.get(e.id)).filter(Boolean);plan.exercises=[...ordered,...plan.exercises.filter(e=>!ordered.some(x=>x.id===e.id))];}persist();renderSession();}
   function reorderByPointer(container,getList,render){
     if(!container)return;
-    let from=null,pointerId=null,lastY=0,lastX=0,autoFrame=0;
+    let from=null,pointerId=null,lastY=0,lastX=0,autoFrame=0,active=false,draggedKey=null;
+    const itemKey=(item,index)=>item&&typeof item==="object"?(item.uid||item.instanceId||item.id||`${item.name||"item"}-${index}`):String(item);
     const stopAuto=()=>{if(autoFrame)cancelAnimationFrame(autoFrame);autoFrame=0;};
-    const autoScroll=()=>{
-      if(from===null)return;
-      const edge=100;let delta=0;
-      if(lastY<edge)delta=-Math.max(3,Math.round((edge-lastY)/7));
-      else if(lastY>window.innerHeight-edge)delta=Math.max(3,Math.round((lastY-(window.innerHeight-edge))/7));
+    const currentIndex=()=>{const list=getList();return list.findIndex((item,i)=>itemKey(item,i)===draggedKey);};
+    const scrollAtPointer=()=>{
+      if(!active)return;
+      const edge=Math.min(115,Math.max(72,window.innerHeight*.16));let delta=0;
+      if(lastY<edge)delta=-Math.min(22,Math.max(3,(edge-lastY)*.22));
+      else if(lastY>window.innerHeight-edge)delta=Math.min(22,Math.max(3,(lastY-(window.innerHeight-edge))*.22));
       if(delta){
-        window.scrollBy(0,delta);
-        const target=document.elementFromPoint(lastX,Math.max(0,Math.min(window.innerHeight-1,lastY)))?.closest?.("[data-reorder-index]");
-        container.querySelectorAll("[data-reorder-index]").forEach(c=>c.classList.toggle("drop-target",c===target&&Number(c.dataset.reorderIndex)!==from));
+        const scrollable=container.closest(".modal-card")||document.scrollingElement;
+        if(scrollable&&scrollable!==document.scrollingElement&&scrollable.scrollHeight>scrollable.clientHeight){scrollable.scrollTop+=delta;}
+        else window.scrollBy(0,delta);
+        const y=Math.max(1,Math.min(window.innerHeight-2,lastY));
+        const target=document.elementFromPoint(Math.max(1,Math.min(window.innerWidth-2,lastX)),y)?.closest?.("[data-reorder-index]");
+        if(target&&container.contains(target))moveOver(Number(target.dataset.reorderIndex));
       }
-      autoFrame=requestAnimationFrame(autoScroll);
+      autoFrame=requestAnimationFrame(scrollAtPointer);
+    };
+    const moveOver=targetIndex=>{
+      const list=getList(),liveFrom=currentIndex();
+      if(liveFrom<0||targetIndex<0||targetIndex>=list.length||targetIndex===liveFrom)return;
+      const [item]=list.splice(liveFrom,1);list.splice(targetIndex,0,item);from=targetIndex;
+      render();
+      const card=container.querySelector(`[data-reorder-index="${targetIndex}"]`);
+      if(card)card.classList.add("is-dragging");
+      container.querySelectorAll("[data-reorder-index]").forEach(c=>c.classList.toggle("drop-target",Number(c.dataset.reorderIndex)===targetIndex));
     };
     container.addEventListener("pointerdown",e=>{
-      const grip=e.target.closest(".drag-handle");if(!grip)return;
+      const grip=e.target.closest(".drag-handle");if(!grip||active)return;
       const card=grip.closest("[data-reorder-index]");if(!card)return;
-      from=Number(card.dataset.reorderIndex);pointerId=e.pointerId;lastY=e.clientY;lastX=e.clientX;
+      const list=getList();from=Number(card.dataset.reorderIndex);draggedKey=itemKey(list[from],from);pointerId=e.pointerId;lastY=e.clientY;lastX=e.clientX;active=true;
       card.classList.add("is-dragging");document.body.classList.add("reordering-exercises");
       try{grip.setPointerCapture(e.pointerId);}catch{}
-      autoFrame=requestAnimationFrame(autoScroll);e.preventDefault();
+      autoFrame=requestAnimationFrame(scrollAtPointer);e.preventDefault();
     });
     document.addEventListener("pointermove",e=>{
-      if(from===null||e.pointerId!==pointerId)return;
+      if(!active||e.pointerId!==pointerId)return;
       lastY=e.clientY;lastX=e.clientX;
-      const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-reorder-index]");
-      container.querySelectorAll("[data-reorder-index]").forEach(c=>c.classList.toggle("drop-target",c===target&&Number(c.dataset.reorderIndex)!==from));
+      const target=document.elementFromPoint(Math.max(1,Math.min(window.innerWidth-2,e.clientX)),Math.max(1,Math.min(window.innerHeight-2,e.clientY)))?.closest?.("[data-reorder-index]");
+      if(target&&container.contains(target))moveOver(Number(target.dataset.reorderIndex));
       e.preventDefault();
     },{passive:false});
     const finish=e=>{
-      if(from===null||e.pointerId!==pointerId)return;
-      const target=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-reorder-index]");
-      const list=getList(),original=from;let to=target?Number(target.dataset.reorderIndex):from;
+      if(!active||e.pointerId!==pointerId)return;
       stopAuto();container.querySelectorAll(".is-dragging,.drop-target").forEach(c=>c.classList.remove("is-dragging","drop-target"));document.body.classList.remove("reordering-exercises");
-      if(target&&to!==original&&list[original]!==undefined){const [item]=list.splice(original,1);list.splice(Math.max(0,Math.min(list.length,to)),0,item);render();persist();showToast("Ordine degli esercizi aggiornato.");}
-      from=null;pointerId=null;
+      active=false;from=null;pointerId=null;draggedKey=null;persist();
+      if(e.type==="pointerup")showToast("Ordine degli esercizi aggiornato.");
     };
     document.addEventListener("pointerup",finish);document.addEventListener("pointercancel",finish);
   }
@@ -552,7 +576,12 @@
     $("#cancelPlanBtn").addEventListener("click",()=>{$("#planEditor").hidden=true;});
     $("#exerciseSearch").addEventListener("input",renderLibrary);
     $("#muscleFilter").addEventListener("change",renderLibrary);
-    $("#equipmentFilter").addEventListener("change",renderLibrary);
+    $$("[data-muscle-select]").forEach(button=>button.addEventListener("click",()=>{
+      const select=$("#muscleFilter");select.value=select.value===button.dataset.muscleSelect?"":button.dataset.muscleSelect;renderLibrary();
+    }));
+    $$(".muscle-zones [data-muscle]").forEach(zone=>{zone.setAttribute("role","button");zone.setAttribute("tabindex","0");zone.setAttribute("aria-label",`Filtra ${zone.dataset.muscle}`);const activate=()=>{const select=$("#muscleFilter");select.value=select.value===zone.dataset.muscle?"":zone.dataset.muscle;renderLibrary();};zone.addEventListener("click",activate);zone.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();activate();}});});
+    $("#clearMuscleFilter").addEventListener("click",()=>{$("#muscleFilter").value="";renderLibrary();});
+    $$("[data-anatomy-view]").forEach(button=>button.addEventListener("click",()=>{const back=button.dataset.anatomyView==="back";$(".front-zones").hidden=back;$(".back-zones").hidden=!back;$$('[data-anatomy-view]').forEach(b=>b.classList.toggle('active',b===button));}));
     $("#modalClose").addEventListener("click",closeModal);
     $("#modal").addEventListener("click",e=>{if(e.target===$("#modal"))closeModal();});
     document.addEventListener("click",e=>{const target=e.target.closest("[data-action]");if(target)handleAction(target);if(e.target.id==="finishEarly")finishSession("interrupted");if(e.target.id==="finishCompleted")finishSession("completed");if(e.target.id==="testSoundBtn")testSound();});

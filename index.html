@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#111315">
   <meta name="description" content="GymBro — traccia, spingi, migliora.">
-  <title>GymBro v14 — Social Studio</title>
+  <title>GymBro v16 — Foundation Rebuild</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -68,11 +68,46 @@
 
       <section id="libraryView" class="view">
         <div class="eyebrow">ARCHIVIO MOVIMENTI</div><h1>Trova il tuo<br><span class="lime">prossimo esercizio.</span></h1>
-        <div class="filters panel">
-          <label>Cerca <input id="exerciseSearch" placeholder="Es. squat, petto..."></label>
-          <label>Muscolo <select id="muscleFilter"><option value="">Tutti i muscoli</option><option value="Petto">Petto</option><option value="Schiena">Schiena</option><option value="Spalle">Spalle</option><option value="Bicipiti">Bicipiti</option><option value="Tricipiti">Tricipiti</option><option value="Gambe">Gambe</option><option value="Addome">Addome</option></select></label>
-          <label>Attrezzatura <select id="equipmentFilter"><option value="">Tutta</option><option value="dumbbell">Manubri</option><option value="barbell">Bilanciere</option><option value="machine">Macchinari</option><option value="cable">Cavi</option><option value="bodyweight">Corpo libero</option><option value="band">Elastici</option></select></label>
+        <div class="anatomy-filter panel">
+          <div class="anatomy-filter-head"><div><span class="eyebrow">FILTRA PER MUSCOLO</span><h2>Che cosa vuoi allenare?</h2></div><button type="button" id="clearMuscleFilter" class="text-button">Azzera</button></div>
+          <div class="anatomy-toggle" role="tablist" aria-label="Vista anatomica"><button type="button" class="active" data-anatomy-view="front">Anteriore</button><button type="button" data-anatomy-view="back">Posteriore</button></div>
+          <div class="anatomy-layout">
+            <div class="anatomy-figure" aria-label="Figura anatomica interattiva">
+              <svg viewBox="0 0 220 360" class="anatomy-svg" role="img" aria-label="Seleziona un gruppo muscolare">
+                <g class="body-base" fill="#454b4b" stroke="#697171" stroke-width="1.5">
+                  <circle cx="110" cy="28" r="19"/><path d="M94 49 L126 49 L135 68 L149 82 L143 126 L132 143 L128 184 L92 184 L88 143 L77 126 L71 82 L85 68 Z"/>
+                  <path d="M76 75 L56 86 L38 142 L46 151 L65 113 L84 91 Z M144 75 L164 86 L182 142 L174 151 L155 113 L136 91 Z"/>
+                  <path d="M92 181 L108 181 L105 251 L98 311 L83 311 L84 248 Z M112 181 L128 181 L136 248 L137 311 L122 311 L115 251 Z"/>
+                  <path d="M83 311 L99 311 L100 324 L76 324 Q70 320 83 311 M122 311 L137 311 L146 324 L120 324 Z"/>
+                </g>
+                <g class="muscle-zones front-zones">
+                  <path data-muscle="Petto" d="M86 77 Q99 69 108 82 L106 106 Q94 111 84 99 Z M112 82 Q121 69 134 77 L136 99 Q126 111 114 106 Z"/>
+                  <path data-muscle="Spalle" d="M80 72 Q91 64 99 75 L91 91 L79 89 Z M121 75 Q129 64 140 72 L141 89 L129 91 Z"/>
+                  <path data-muscle="Bicipiti" d="M60 91 L73 96 L65 119 L55 116 Z M147 96 L160 91 L165 116 L155 119 Z"/>
+                  <path data-muscle="Tricipiti" class="secondary-zone" d="M53 119 L64 122 L57 140 L48 139 Z M156 122 L167 119 L172 139 L163 140 Z"/>
+                  <path data-muscle="Addome" d="M96 111 L108 112 L107 151 L97 151 Z M112 112 L124 111 L123 151 L113 151 Z"/>
+                  <path data-muscle="Quadricipiti" d="M91 185 L106 185 L101 235 L90 239 Z M114 185 L129 185 L130 239 L119 235 Z"/>
+                  <path data-muscle="Polpacci" d="M88 251 L99 251 L94 292 L85 294 Z M121 251 L132 251 L135 294 L126 292 Z"/>
+                </g>
+                <g class="muscle-zones back-zones" hidden>
+                  <path data-muscle="Schiena" d="M91 70 L109 76 L107 130 L96 146 L87 111 Z M111 76 L129 70 L133 111 L124 146 L113 130 Z"/>
+                  <path data-muscle="Spalle" d="M80 72 Q91 64 99 75 L91 91 L79 89 Z M121 75 Q129 64 140 72 L141 89 L129 91 Z"/>
+                  <path data-muscle="Tricipiti" d="M53 91 L66 96 L61 124 L51 119 Z M154 96 L167 91 L169 119 L159 124 Z"/>
+                  <path data-muscle="Glutei" d="M91 145 L108 146 L107 177 L91 176 Z M112 146 L129 145 L129 176 L113 177 Z"/>
+                  <path data-muscle="Femorali" d="M91 185 L106 185 L101 235 L90 239 Z M114 185 L129 185 L130 239 L119 235 Z"/>
+                  <path data-muscle="Polpacci" d="M88 251 L99 251 L94 292 L85 294 Z M121 251 L132 251 L135 294 L126 292 Z"/>
+                </g>
+              </svg>
+              <small>Tocca una zona colorata per filtrare</small>
+            </div>
+            <div class="muscle-chips" id="muscleChips">
+              <button type="button" data-muscle-select="Petto">Petto</button><button type="button" data-muscle-select="Schiena">Schiena</button><button type="button" data-muscle-select="Spalle">Spalle</button><button type="button" data-muscle-select="Bicipiti">Bicipiti</button><button type="button" data-muscle-select="Tricipiti">Tricipiti</button><button type="button" data-muscle-select="Addome">Addome</button><button type="button" data-muscle-select="Gambe">Gambe</button><button type="button" data-muscle-select="Glutei">Glutei</button><button type="button" data-muscle-select="Femorali">Femorali</button><button type="button" data-muscle-select="Quadricipiti">Quadricipiti</button><button type="button" data-muscle-select="Polpacci">Polpacci</button>
+            </div>
+          </div>
+          <label class="library-search">Cerca esercizio<input id="exerciseSearch" placeholder="Es. squat, panca, curl..."></label>
+          <select id="muscleFilter" aria-hidden="true" tabindex="-1" class="visually-hidden"><option value="">Tutti i muscoli</option><option value="Petto">Petto</option><option value="Schiena">Schiena</option><option value="Spalle">Spalle</option><option value="Bicipiti">Bicipiti</option><option value="Tricipiti">Tricipiti</option><option value="Gambe">Gambe</option><option value="Addome">Addome</option><option value="Glutei">Glutei</option><option value="Femorali">Femorali</option><option value="Quadricipiti">Quadricipiti</option><option value="Polpacci">Polpacci</option><option value="Avambracci">Avambracci</option><option value="Core">Core</option></select>
         </div>
+        <div class="library-results-head"><span id="libraryResultCount">Esercizi disponibili</span><span>In base alla tua attrezzatura</span></div>
         <div id="libraryList" class="stack"></div>
       </section>
 
