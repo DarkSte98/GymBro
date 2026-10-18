@@ -50,3 +50,6 @@
 .story-stage{height:min(100%,66vh)}
 .story-editor-panel{max-height:32vh}
 #storyCanvas{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+
+/* v13: drag-and-drop affidabile e blocchi sticker gestuali */
+.drag-handle{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab} .reorder-card.is-dragging{opacity:.45;transform:scale(.985)} .reorder-card.drop-target{border-color:var(--lime);box-shadow:0 0 0 2px #c3ff3d35;transform:translateY(2px)} body.reordering-exercises{user-select:none;-webkit-user-select:none;cursor:grabbing} .story-sticker-grid button[data-add$="Block"]{background:linear-gradient(145deg,#29321e,#202428);border-color:#596c35;min-height:74px} .story-sticker-grid button[data-add$="Block"] b{font-size:13px} #storyCanvas{touch-action:none}

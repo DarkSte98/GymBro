@@ -47,9 +47,15 @@ Non c'è backend/account cloud. Instagram non offre un pulsante universale per p
 - I bordi di selezione e le maniglie di modifica non vengono inclusi nel PNG esportato.
 
 
-## v12 — editor story (correzione cache e controlli)
+## v13 — editor story (correzione cache e controlli)
 - Versione del service worker aggiornata per invalidare la vecchia cache.
 - Editor con testo/adesivi sovrapposti senza pannelli opachi nel rendering esportato.
 - Ridimensionamento tramite slider e maniglia più ampia nell'anteprima.
 - Campo per personalizzare il testo dell'adesivo selezionato.
 - Il bordo di selezione e la maniglia sono solo strumenti di modifica e non vengono esportati nell'immagine finale.
+
+
+## v13
+- Blocchi preimpostati di statistiche (riepilogo, volume+serie, performance) come un unico adesivo senza riquadri.
+- Ridimensionamento con gesto pinch a due dita direttamente sull’anteprima.
+- Riordino esercizi con drag and drop dal grip; rimossi i pulsanti freccia.
