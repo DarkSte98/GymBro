@@ -2,7 +2,7 @@
   "use strict";
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-  const STORAGE_KEY = "gymbro_test_v1";
+  const STORAGE_KEY = "gymbro_rebuild_v17";
   const equipmentLabels = {dumbbell:"Manubri",barbell:"Bilanciere",machine:"Macchinari",cable:"Cavi",bodyweight:"Corpo libero",band:"Elastici"};
   const exercises = [
     {id:"bench",name:"Panca piana con bilanciere",muscle:"Petto",secondary:"Tricipiti, spalle",equipment:"barbell",level:"Intermedio",sets:3,reps:10,rest:90,unilateral:false},
@@ -35,7 +35,7 @@
   ];
   const freshState = () => ({
     profile:{name:"",goal:"hypertrophy",level:"beginner",days:4,equipment:["dumbbell","barbell","machine","cable","bodyweight"]},
-    plans:[],history:[],session:null
+    profileConfigured:false, plans:[],history:[],session:null
   });
   let state = loadState();
   let sessionInterval = null, restInterval = null, toastTimeout = null;
@@ -550,6 +550,24 @@
       case "share-history":{const r=state.history.find(x=>x.id===id);if(r)shareRecord(r);break;}
     }
   }
+  let onboardingStep=0;
+  const onboardingDraft={name:"",goal:"hypertrophy",level:"beginner",days:4,equipment:["dumbbell","barbell","machine","cable","bodyweight"]};
+  function renderOnboarding(){
+    const root=$("#onboardingRoot");if(!root)return;
+    const steps=[
+      `<div class="onboard-kicker">01 / 03 · IL TUO SPAZIO</div><h1>Come ti alleni<br><em>davvero?</em></h1><p class="onboard-copy">Scegli una volta l'attrezzatura che hai. GymBro userà questa scelta per personalizzare il catalogo e le schede.</p><div class="onboard-equipment">${Object.entries(equipmentLabels).map(([key,label])=>`<button type="button" class="equipment-tile ${onboardingDraft.equipment.includes(key)?'selected':''}" data-onboard-equipment="${key}"><span class="equipment-check">${onboardingDraft.equipment.includes(key)?'✓':'+'}</span><strong>${label}</strong></button>`).join('')}</div>`,
+      `<div class="onboard-kicker">02 / 03 · OBIETTIVO</div><h1>Che cosa vuoi<br><em>ottenere?</em></h1><p class="onboard-copy">L'obiettivo aiuta GymBro a proporre schede più adatte a te.</p><div class="onboard-options">${[['hypertrophy','Aumentare la massa','Più volume e crescita muscolare'],['strength','Aumentare la forza','Progressione sui carichi'],['endurance','Aumentare la resistenza','Più capacità di lavoro'],['general','Fitness generale','Equilibrio e costanza']].map(([v,t,d])=>`<button type="button" class="onboard-option ${onboardingDraft.goal===v?'selected':''}" data-onboard-goal="${v}"><span><b>${t}</b><small>${d}</small></span><i>${onboardingDraft.goal===v?'●':'○'}</i></button>`).join('')}</div>`,
+      `<div class="onboard-kicker">03 / 03 · IL TUO PROFILO</div><h1>Pronti a<br><em>partire.</em></h1><p class="onboard-copy">Puoi cambiare queste preferenze in qualsiasi momento dalle impostazioni del profilo.</p><label class="onboard-label">Come ti chiami?<input id="onboardName" maxlength="32" placeholder="Il tuo nome" value="${escapeHTML(onboardingDraft.name)}"></label><div class="onboard-two"><label class="onboard-label">Esperienza<select id="onboardLevel"><option value="beginner" ${onboardingDraft.level==='beginner'?'selected':''}>Principiante</option><option value="intermediate" ${onboardingDraft.level==='intermediate'?'selected':''}>Intermedio</option><option value="advanced" ${onboardingDraft.level==='advanced'?'selected':''}>Avanzato</option></select></label><label class="onboard-label">Giorni a settimana<select id="onboardDays">${[2,3,4,5,6].map(n=>`<option value="${n}" ${Number(onboardingDraft.days)===n?'selected':''}>${n} giorni</option>`).join('')}</select></label></div>`
+    ];
+    root.hidden=false;root.innerHTML=`<div class="onboard-backdrop"><div class="onboard-card"><div class="onboard-brand"><span class="brand-mark">G</span><span>Gym<span class="lime">Bro</span></span><span class="onboard-step">${onboardingStep+1} di 3</span></div><div class="onboard-progress"><span style="width:${(onboardingStep+1)*33.333}%"></span></div><div class="onboard-content">${steps[onboardingStep]}</div><div class="onboard-actions">${onboardingStep>0?'<button type="button" class="secondary" id="onboardBack">Indietro</button>':'<button type="button" class="secondary" id="onboardSkip">Più tardi</button>'}<button type="button" class="primary" id="onboardNext">${onboardingStep===2?'Crea il mio spazio':'Continua'} <span>→</span></button></div><p class="onboard-footnote">Le preferenze dell'attrezzatura si impostano qui una volta sola.</p></div></div>`;
+    root.querySelectorAll('[data-onboard-equipment]').forEach(b=>b.onclick=()=>{const v=b.dataset.onboardEquipment;onboardingDraft.equipment=onboardingDraft.equipment.includes(v)?onboardingDraft.equipment.filter(x=>x!==v):[...onboardingDraft.equipment,v];renderOnboarding();});
+    root.querySelectorAll('[data-onboard-goal]').forEach(b=>b.onclick=()=>{onboardingDraft.goal=b.dataset.onboardGoal;renderOnboarding();});
+    $('#onboardBack')?.addEventListener('click',()=>{saveOnboardFields();onboardingStep=Math.max(0,onboardingStep-1);renderOnboarding();});
+    $('#onboardSkip')?.addEventListener('click',()=>{root.hidden=true;go('setupView');});
+    $('#onboardNext')?.addEventListener('click',()=>{saveOnboardFields();if(onboardingStep===0&&!onboardingDraft.equipment.length){showToast('Scegli almeno un tipo di attrezzatura.');return;}if(onboardingStep<2){onboardingStep++;renderOnboarding();return;}state.profile={...onboardingDraft,days:Number(onboardingDraft.days)};state.profileConfigured=true;persist();root.hidden=true;fillProfile();renderLibrary();renderHome();showToast('Profilo configurato. Catalogo personalizzato.');go('homeView');});
+  }
+  function saveOnboardFields(){if($('#onboardName'))onboardingDraft.name=$('#onboardName').value.trim();if($('#onboardLevel'))onboardingDraft.level=$('#onboardLevel').value;if($('#onboardDays'))onboardingDraft.days=Number($('#onboardDays').value);}
+
   function bind(){
     reorderByPointer($("#editorExercises"),()=>editorExerciseIds,renderEditorExercises);
     reorderByPointer($("#sessionExercises"),()=>state.session?.exercises||[],renderSession);
@@ -629,8 +647,8 @@
   }
   function boot(){
     bind();renderHome();renderPlans();renderLibrary();renderHistory();
-    if(!state.profile.name && !state.profileConfigured){/* onboarding remains optional for test prototype */}
     if(state.session){state.session=null;persist();}
+    if(!state.profileConfigured){onboardingDraft.name=state.profile.name||"";onboardingDraft.goal=state.profile.goal||"hypertrophy";onboardingDraft.level=state.profile.level||"beginner";onboardingDraft.days=state.profile.days||4;onboardingDraft.equipment=[...(state.profile.equipment||[])];onboardingStep=0;renderOnboarding();}
     if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker non registrato",err));
   }
   boot();
