@@ -272,77 +272,64 @@
     $("#shareSummary").onclick=()=>shareRecord(r);
     $("#createStoryGraphic").onclick=()=>openStoryGraphic(r);
   }
-  let storyRecord = null, storyPhoto = null, storyTemplate = "photo", storyStickers = [], selectedSticker = 0;
+  let storyRecord = null, storyPhoto = null, storyTemplate = "photo", storyStickers = [], selectedSticker = 0, storyBg = "#171a1c";
+  const STORY_STYLES = ["Pulito", "GymBro", "Contorno", "Editoriale"];
   function openStoryGraphic(r){
-    storyRecord=r;storyPhoto=null;storyTemplate="photo";
-    storyStickers = [
-      {id:"title",label:"Titolo",x:38,y:100,w:464,h:110,baseW:464,baseH:110,kind:"title"},
-      {id:"duration",label:"Durata",x:34,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"DURATA"},
-      {id:"volume",label:"Volume",x:286,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"VOLUME"},
-      {id:"sets",label:"Serie",x:34,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"SERIE"},
-      {id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"RIPETIZIONI"}
-    ];
-    selectedSticker=0;
-    openModal(`<div class="eyebrow">GYMBRO SOCIAL STUDIO</div><h2 id="modalTitle">Il tuo allenamento, da condividere.</h2><p class="muted">Aggiungi una foto come sfondo. Le statistiche sono adesivi di solo testo: niente riquadri opachi e nessun filtro sulla foto. Trascina un adesivo per spostarlo e trascina il punto verde in basso a destra per ridimensionare solo quel testo.</p><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima con adesivi spostabili e ridimensionabili"></canvas><div class="story-controls"><label class="secondary story-file-label">＋ Foto di sfondo <input id="storyPhotoInput" type="file" accept="image/*" hidden></label><label class="story-template-label">Stile adesivi <select id="storyTemplate"><option value="photo">Adesivi traslucidi</option><option value="lime">Adesivi lime</option></select></label></div><div class="story-sticker-tools"><span class="muted">Adesivo selezionato:</span><select id="stickerSelect" aria-label="Seleziona adesivo"><option value="0">Titolo</option><option value="1">Durata</option><option value="2">Volume</option><option value="3">Serie</option><option value="4">Ripetizioni</option></select><button class="secondary" id="resetStickers" type="button">Ripristina posizione</button></div><div class="stack" style="margin-top:12px"><button class="primary full" id="shareStoryImage">Condividi immagine ↗</button><button class="secondary full" id="downloadStoryImage">Salva immagine PNG</button><p class="muted">Su iPhone, “Condividi immagine” apre il menu di condivisione se Safari supporta la condivisione dei file. Se Instagram è installato e compare nel menu, selezionalo; altrimenti salva l'immagine e caricala da Instagram.</p></div>`);
-    drawStoryGraphic();
+    storyRecord=r;storyPhoto=null;storyTemplate="Pulito";storyBg="#171a1c";
+    const values=storyValues(r);
+    storyStickers=[
+      {id:uid(),kind:"title",label:"Titolo",text:r.planName||"Il mio allenamento",x:42,y:160,size:42,color:"#ffffff",weight:700,style:"Pulito"},
+      {id:uid(),kind:"stat",label:"Durata",stat:"DURATA",x:42,y:610,size:23,color:"#ffffff",weight:700,style:"Pulito"},
+      {id:uid(),kind:"stat",label:"Volume",stat:"VOLUME",x:42,y:680,size:34,color:"#c3ff3d",weight:700,style:"Pulito"}
+    ];selectedSticker=0;
+    openModal(`<div class="social-editor" id="socialEditor">
+      <header class="social-editor-head"><button class="social-icon-btn" id="storyBack" aria-label="Indietro">‹</button><div><strong>GymBro <span>STORY STUDIO</span></strong><small>Crea la tua storia</small></div><button class="social-done" id="storyDone">Fatto ✓</button></header>
+      <div class="story-stage-wrap"><div class="story-stage"><canvas id="storyCanvas" width="540" height="960" aria-label="Anteprima storia a tutta pagina"></canvas></div></div>
+      <div class="story-editor-panel"><div class="story-editor-tabs"><button class="story-tab active" data-panel="background">Sfondo</button><button class="story-tab" data-panel="stickers">Adesivi</button><button class="story-tab" data-panel="style">Stile</button></div>
+        <div class="story-panel active" id="panel-background"><label class="story-action-tile">▧ <span><b>La tua foto</b><small>Usa una foto come sfondo</small></span><input id="storyPhotoInput" type="file" accept="image/*" hidden></label><div class="story-bg-swatches"><button data-bg="#171a1c" aria-label="Antracite" class="active" style="background:#171a1c"></button><button data-bg="#080909" aria-label="Nero" style="background:#080909"></button><button data-bg="#23301a" aria-label="Verde scuro" style="background:#23301a"></button><button data-bg="#c3ff3d" aria-label="Lime" style="background:#c3ff3d"></button></div><p class="story-helper">La foto resta sullo sfondo. Puoi spostare e ingrandire ogni elemento senza modificare l'immagine.</p></div>
+        <div class="story-panel" id="panel-stickers"><div class="story-sticker-grid"><button data-add="duration"><b>00:00</b><span>Durata</span></button><button data-add="volume"><b>3.620 kg</b><span>Volume</span></button><button data-add="sets"><b>33</b><span>Serie</span></button><button data-add="reps"><b>120</b><span>Ripetizioni</span></button><button data-add="exercises"><b>8</b><span>Esercizi</span></button><button data-add="calories"><b>483 kcal</b><span>Calorie*</span></button><button data-add="title"><b>Tt</b><span>Testo</span></button><button data-add="brand"><b>GB /</b><span>Firma GymBro</span></button></div><p class="story-helper">Tocca un adesivo per aggiungerlo. Trascinalo direttamente sull'anteprima per posizionarlo.</p></div>
+        <div class="story-panel" id="panel-style"><div class="story-style-options"><button data-style="Pulito" class="active"><b>Ab</b><span>Pulito</span></button><button data-style="GymBro"><b style="color:#c3ff3d">GB</b><span>GymBro</span></button><button data-style="Contorno"><b style="-webkit-text-stroke:1px white;color:transparent">Ab</b><span>Contorno</span></button><button data-style="Editoriale"><b style="font-family:Georgia,serif">Ab</b><span>Editoriale</span></button></div><div class="story-selected-tools"><label>Colore testo<select id="stickerColor"><option value="#ffffff">Bianco</option><option value="#c3ff3d">GymBro lime</option><option value="#111111">Nero</option></select></label><label>Dimensione<input id="stickerSize" type="range" min="12" max="88" value="34"></label><button class="secondary" id="deleteSticker">Elimina adesivo selezionato</button></div></div>
+      </div>
+      <footer class="story-editor-footer"><button class="secondary" id="downloadStoryImage">↓ Salva</button><button class="primary" id="shareStoryImage">Condividi ↗</button></footer>
+      <p class="story-editor-note">*Le calorie sono modificabili solo se hai un dato disponibile. Instagram potrebbe richiedere di selezionare la storia dal rullino.</p>
+    </div>`);
+    const sc=$("#storyCanvas");
+    const selectSticker=(id)=>{selectedSticker=storyStickers.findIndex(s=>s.id===id);if(selectedSticker<0)selectedSticker=0;syncStickerTools();drawStoryGraphic();};
+    const syncStickerTools=()=>{const st=storyStickers[selectedSticker];if(!st)return;$("#stickerSize").value=String(st.size);$("#stickerColor").value=st.color||"#ffffff";};
+    const switchPanel=name=>{$$(".story-tab").forEach(b=>b.classList.toggle("active",b.dataset.panel===name));$$(".story-panel").forEach(p=>p.classList.toggle("active",p.id===`panel-${name}`));};
+    $$(".story-tab").forEach(b=>b.onclick=()=>switchPanel(b.dataset.panel));
+    $("#storyBack").onclick=()=>closeModal();$("#storyDone").onclick=()=>{switchPanel("stickers");showToast("Seleziona e modifica gli adesivi, poi condividi la storia.");};
     $("#storyPhotoInput").addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{storyPhoto=await loadImage(URL.createObjectURL(f));drawStoryGraphic();}catch{showToast("Non riesco a leggere questa foto.");}});
-    $("#storyTemplate").addEventListener("change",e=>{storyTemplate=e.target.value;drawStoryGraphic();});
-    $("#stickerSelect").addEventListener("change",e=>{selectedSticker=Number(e.target.value)||0;drawStoryGraphic();});
-    $("#resetStickers").addEventListener("click",()=>{storyStickers[0]={id:"title",label:"Titolo",x:38,y:100,w:464,h:110,baseW:464,baseH:110,kind:"title"};storyStickers[1]={id:"duration",label:"Durata",x:34,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"DURATA"};storyStickers[2]={id:"volume",label:"Volume",x:286,y:545,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"VOLUME"};storyStickers[3]={id:"sets",label:"Serie",x:34,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"SERIE"};storyStickers[4]={id:"reps",label:"Ripetizioni",x:286,y:675,w:220,h:112,baseW:220,baseH:112,kind:"stat",stat:"RIPETIZIONI"};drawStoryGraphic();});
-    const sc=$("#storyCanvas");let dragSticker=null,dragMode="move",dragStart=null;
-    sc.addEventListener("pointerdown",e=>{const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height;let idx=-1;for(let i=storyStickers.length-1;i>=0;i--){const st=storyStickers[i];if(x>=st.x&&x<=st.x+st.w&&y>=st.y&&y<=st.y+st.h){idx=i;break;}}if(idx<0)return;selectedSticker=idx;$("#stickerSelect").value=String(idx);dragSticker=idx;const st=storyStickers[idx];dragMode=(x>st.x+st.w-34&&y>st.y+st.h-34)?"resize":"move";dragStart={x,y,sx:st.x,sy:st.y,sw:st.w,sh:st.h};sc.setPointerCapture(e.pointerId);drawStoryGraphic();e.preventDefault();});
-    sc.addEventListener("pointermove",e=>{if(dragSticker===null||!dragStart)return;const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height,st=storyStickers[dragSticker];if(dragMode==="move"){st.x=Math.max(0,Math.min(sc.width-st.w,dragStart.sx+x-dragStart.x));st.y=Math.max(0,Math.min(sc.height-st.h,dragStart.sy+y-dragStart.y));}else{st.w=Math.max(70,Math.min(sc.width-st.x,dragStart.sw+x-dragStart.x));st.h=Math.max(38,Math.min(sc.height-st.y,dragStart.sh+y-dragStart.y));}drawStoryGraphic();e.preventDefault();});
-    const endDrag=()=>{dragSticker=null;dragStart=null;};sc.addEventListener("pointerup",endDrag);sc.addEventListener("pointercancel",endDrag);
-    $("#shareStoryImage").addEventListener("click",shareStoryImage);
-    $("#downloadStoryImage").addEventListener("click",downloadStoryImage);
+    $$("[data-bg]").forEach(b=>b.onclick=()=>{storyBg=b.dataset.bg;$$("[data-bg]").forEach(x=>x.classList.toggle("active",x===b));drawStoryGraphic();});
+    $$("[data-style]").forEach(b=>b.onclick=()=>{storyTemplate=b.dataset.style;$$("[data-style]").forEach(x=>x.classList.toggle("active",x===b));const st=storyStickers[selectedSticker];if(st)st.style=storyTemplate;drawStoryGraphic();});
+    $$("[data-add]").forEach(b=>b.onclick=()=>{const kind=b.dataset.add,st=makeStorySticker(kind,r,storyStickers.length);storyStickers.push(st);selectSticker(st.id);switchPanel("style");});
+    $("#stickerColor").onchange=e=>{const st=storyStickers[selectedSticker];if(st){st.color=e.target.value;drawStoryGraphic();}};
+    $("#stickerSize").oninput=e=>{const st=storyStickers[selectedSticker];if(st){st.size=Number(e.target.value);drawStoryGraphic();}};
+    $("#deleteSticker").onclick=()=>{if(!storyStickers.length)return;storyStickers.splice(selectedSticker,1);selectedSticker=Math.max(0,selectedSticker-1);syncStickerTools();drawStoryGraphic();};
+    let drag=null;
+    sc.addEventListener("pointerdown",e=>{const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height;let idx=-1,resize=false;for(let i=storyStickers.length-1;i>=0;i--){const box=stickerBounds(sc.getContext("2d"),storyStickers[i]);if(x>=box.x-16&&x<=box.x+box.w+16&&y>=box.y-16&&y<=box.y+box.h+16){idx=i;resize=x>box.x+box.w-12&&y>box.y+box.h-12;break;}}if(idx<0)return;selectedSticker=idx;const st=storyStickers[idx];drag={x,y,sx:st.x,sy:st.y,size:st.size,mode:resize?"resize":"move"};sc.setPointerCapture(e.pointerId);syncStickerTools();drawStoryGraphic();e.preventDefault();});
+    sc.addEventListener("pointermove",e=>{if(!drag)return;const rect=sc.getBoundingClientRect(),x=(e.clientX-rect.left)*sc.width/rect.width,y=(e.clientY-rect.top)*sc.height/rect.height,st=storyStickers[selectedSticker];if(!st)return;if(drag.mode==="resize"){st.size=Math.max(12,Math.min(110,drag.size+(x-drag.x)*0.35));$("#stickerSize").value=String(st.size);}else{st.x=Math.max(0,Math.min(520,drag.sx+x-drag.x));st.y=Math.max(20,Math.min(940,drag.sy+y-drag.y));}drawStoryGraphic();e.preventDefault();});
+    const endDrag=()=>drag=null;sc.addEventListener("pointerup",endDrag);sc.addEventListener("pointercancel",endDrag);
+    sc.addEventListener("dblclick",()=>{switchPanel("style");});
+    $("#shareStoryImage").onclick=shareStoryImage;$("#downloadStoryImage").onclick=downloadStoryImage;
+    drawStoryGraphic();syncStickerTools();
+  }
+  function uid(){return "st"+Math.random().toString(36).slice(2,10);}
+  function storyValues(r){return {DURATA:formatTime(r.duration),VOLUME:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,SERIE:`${r.setsCompleted}/${r.setsPlanned}`,RIPETIZIONI:String(r.reps),ESERCIZI:String(r.exercisesCompleted),CALORIE:"—"};}
+  function makeStorySticker(kind,r,index){const values=storyValues(r),defaults={duration:{label:"Durata",text:values.DURATA,stat:"DURATA",size:30,color:"#ffffff"},volume:{label:"Volume",text:values.VOLUME,stat:"VOLUME",size:42,color:"#c3ff3d"},sets:{label:"Serie",text:values.SERIE,stat:"SERIE",size:42,color:"#ffffff"},reps:{label:"Ripetizioni",text:values.RIPETIZIONI,stat:"RIPETIZIONI",size:42,color:"#ffffff"},exercises:{label:"Esercizi",text:values.ESERCIZI,stat:"ESERCIZI",size:42,color:"#ffffff"},calories:{label:"Calorie",text:values.CALORIE,stat:"CALORIE",size:34,color:"#ffffff"},title:{label:"Testo",text:"Scrivi qualcosa…",size:34,color:"#ffffff"},brand:{label:"Firma GymBro",text:"GYMBRO /",size:24,color:"#c3ff3d"}};const d=defaults[kind]||defaults.title;return {id:uid(),kind:kind==="title"?"text":kind,label:d.label,text:d.text,stat:d.stat||null,x:48+(index%2)*60,y:420+(index%4)*65,size:d.size,color:d.color,weight:700,style:storyTemplate};}
+  function stickerText(st,r){if(st.kind==="text")return st.text;if(st.kind==="brand")return "GYMBRO /";const v=storyValues(r);return v[st.stat]??st.text;}
+  function stickerBounds(ctx,st){ctx.save();ctx.font=`${st.weight||700} ${st.size}px ${st.style==="Editoriale"?"Georgia,serif":"Arial,sans-serif"}`;const text=stickerText(st,storyRecord);const w=Math.max(40,ctx.measureText(text).width+8),h=st.size*1.25;ctx.restore();return {x:st.x,y:st.y-h,w,h};}
+  function drawStoryGraphic(showHandles=true,targetCanvas=null){
+    const canvas=targetCanvas||$("#storyCanvas");if(!canvas||!storyRecord)return;const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,r=storyRecord;ctx.clearRect(0,0,w,h);
+    if(storyPhoto){const scale=Math.max(w/storyPhoto.width,h/storyPhoto.height),iw=storyPhoto.width*scale,ih=storyPhoto.height*scale;ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);}else{ctx.fillStyle=storyBg;ctx.fillRect(0,0,w,h);if(storyBg!=="#c3ff3d"){const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#28321e55");g.addColorStop(1,"#05060622");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}}
+    storyStickers.forEach((st,i)=>{ctx.save();const text=stickerText(st,r),size=Math.max(10,st.size);ctx.font=`${st.weight||700} ${size}px ${st.style==="Editoriale"?"Georgia,serif":"Arial,sans-serif"}`;ctx.textBaseline="alphabetic";ctx.textAlign="left";if(st.style==="Contorno"){ctx.lineWidth=Math.max(1,size/22);ctx.strokeStyle=st.color;ctx.strokeText(text,st.x,st.y);}else{ctx.fillStyle=st.style==="GymBro"&&st.kind==="title"?"#c3ff3d":st.color||"#ffffff";ctx.shadowColor="rgba(0,0,0,.55)";ctx.shadowBlur=storyPhoto?5:0;ctx.shadowOffsetY=1;ctx.fillText(text,st.x,st.y);}ctx.restore();if(showHandles&&i===selectedSticker){const b=stickerBounds(ctx,st);ctx.save();ctx.strokeStyle="#c3ff3d";ctx.lineWidth=2;ctx.setLineDash([7,5]);ctx.strokeRect(b.x-8,b.y-8,b.w+16,b.h+16);ctx.setLineDash([]);ctx.fillStyle="#c3ff3d";ctx.beginPath();ctx.arc(b.x+b.w+8,b.y+b.h+8,8,0,Math.PI*2);ctx.fill();ctx.restore();}});
+    if(showHandles){ctx.save();ctx.fillStyle="#c3ff3d";ctx.font="bold 14px Arial";ctx.fillText("GYMBRO / TRACCIA. SPINGI. MIGLIORA.",28,h-28);ctx.restore();}
   }
   function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src;});}
-  function drawStoryGraphic(showHandles=true,targetCanvas=null){
-    const canvas=targetCanvas||$("#storyCanvas");if(!canvas||!storyRecord)return;
-    const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,r=storyRecord;
-    ctx.clearRect(0,0,w,h);
-    if(storyPhoto){
-      const scale=Math.max(w/storyPhoto.width,h/storyPhoto.height),iw=storyPhoto.width*scale,ih=storyPhoto.height*scale;
-      ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);
-    } else {
-      const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#26321a");g.addColorStop(.5,"#171a1c");g.addColorStop(1,"#090b0c");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-      if(showHandles){ctx.fillStyle="rgba(255,255,255,.85)";ctx.font="bold 23px Arial";ctx.fillText("AGGIUNGI UNA FOTO DI SFONDO",36,480);}
-    }
-    const lime="#c3ff3d",white="#ffffff";
-    const values={DURATA:formatTime(r.duration),VOLUME:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,SERIE:`${r.setsCompleted}/${r.setsPlanned}`,RIPETIZIONI:String(r.reps)};
-    storyStickers.forEach((st,i)=>{
-      const selected=showHandles&&i===selectedSticker;
-      const sx=st.w/(st.baseW||st.w),sy=st.h/(st.baseH||st.h);
-      ctx.save();
-      if(st.kind==="title"){
-        ctx.shadowColor="rgba(0,0,0,.78)";ctx.shadowBlur=8;ctx.shadowOffsetY=2;
-        ctx.fillStyle=lime;ctx.font=`bold ${Math.max(10,Math.min(26,19*sx))}px Arial`;
-        ctx.fillText("GYMBRO / ALLENAMENTO",st.x,st.y+Math.max(18,28*sy));
-        ctx.fillStyle=white;ctx.font=`bold ${Math.max(12,Math.min(52,30*Math.min(sx,sy)))}px Arial`;
-        wrapCanvasText(ctx,r.planName||"Il mio allenamento",st.x,st.y+Math.max(48,67*sy),st.w,Math.max(18,34*sy),1);
-      }else{
-        ctx.shadowColor="rgba(0,0,0,.85)";ctx.shadowBlur=8;ctx.shadowOffsetY=2;
-        ctx.fillStyle=storyTemplate==="lime"?lime:white;ctx.font=`bold ${Math.max(9,Math.min(30,15*sx))}px Arial`;
-        ctx.fillText(st.stat,st.x,st.y+Math.max(15,28*sy));
-        ctx.fillStyle=white;ctx.font=`bold ${Math.max(12,Math.min(64,(String(values[st.stat]).length>10?22:29)*Math.min(sx,sy)))}px Arial`;
-        ctx.fillText(values[st.stat],st.x,st.y+Math.max(38,67*sy));
-      }
-      ctx.restore();
-      // Editor-only selection boundary and resize handle; excluded from exported PNG.
-      if(selected){
-        ctx.save();ctx.strokeStyle=lime;ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.strokeRect(st.x,st.y,st.w,st.h);ctx.setLineDash([]);
-        ctx.fillStyle=lime;ctx.beginPath();ctx.arc(st.x+st.w-10,st.y+st.h-10,14,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle="#101310";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(st.x+st.w-17,st.y+st.h-3);ctx.lineTo(st.x+st.w-3,st.y+st.h-17);ctx.stroke();ctx.restore();
-      }
-    });
-    if(showHandles){ctx.fillStyle="rgba(255,255,255,.96)";ctx.font="bold 14px Arial";ctx.shadowColor="rgba(0,0,0,.8)";ctx.shadowBlur=5;ctx.fillText("TRACCIA. SPINGI. MIGLIORA.",28,h-26);ctx.shadowBlur=0;}
-  }
-  function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines=2){let line="",lines=[];for(const word of String(text).split(/\s+/)){const test=line?line+" "+word:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word;}else line=test;}if(line)lines.push(line);lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));}
-  function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
-  function storyBlob(){return new Promise((resolve,reject)=>{const out=document.createElement("canvas");out.width=540;out.height=960;drawStoryGraphic(false,out);out.toBlob(b=>b?resolve(b):reject(new Error("PNG non disponibile")),"image/png");});}
-  async function shareStoryImage(){try{const blob=await storyBlob(),file=new File([blob],"gymbro-allenamento.png",{type:"image/png"});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:"Il mio allenamento GymBro",text:"Traccia. Spingi. Migliora. 💚",files:[file]});}else{downloadBlob(blob);showToast("Immagine salvata: apri Instagram e aggiungila alla Storia.");}}catch(e){if(e.name!=="AbortError")showToast("Condivisione non disponibile: prova Salva immagine PNG.");}}
+  function storyBlob(){return new Promise((resolve,reject)=>{const out=document.createElement("canvas");out.width=1080;out.height=1920;drawStoryGraphic(false,out);out.toBlob(b=>b?resolve(b):reject(new Error("PNG non disponibile")),"image/png");});}
+  async function shareStoryImage(){try{const blob=await storyBlob(),file=new File([blob],"gymbro-story.png",{type:"image/png"});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:"Il mio allenamento GymBro",text:"Traccia. Spingi. Migliora. 💚",files:[file]});}else{downloadBlob(blob);showToast("Immagine salvata: apri Instagram e aggiungila alla Storia.");}}catch(e){if(e.name!=="AbortError")showToast("Condivisione non disponibile: prova Salva immagine PNG.");}}
   async function downloadStoryImage(){try{downloadBlob(await storyBlob());showToast("Grafica PNG pronta. Su iPhone controlla Download in File.");}catch{showToast("Non è stato possibile creare l'immagine.");}}
-  function downloadBlob(blob){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="gymbro-allenamento.png";a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);}
+  function downloadBlob(blob){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="gymbro-story.png";a.style.display="none";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);}
   async function shareRecord(r){
     const text=`GymBro 💚\n${r.planName}\n⏱ ${formatTime(r.duration)}\n🏋️ ${Math.round(r.volume)} kg di volume registrato\n💪 ${r.exercisesCompleted} esercizi · ${r.setsCompleted} serie · ${r.reps} ripetizioni\nTraccia. Spingi. Migliora.`;
     try{if(navigator.share)await navigator.share({title:"Il mio allenamento GymBro",text});else if(navigator.clipboard){await navigator.clipboard.writeText(text);showToast("Riepilogo copiato.");}else showToast(text);}catch(e){if(e.name!=="AbortError")showToast("Condivisione non disponibile in questo browser.");}
