@@ -282,10 +282,7 @@
   ];
   function openStoryGraphic(r){
     storyRecord=r;storyPhoto=null;storyTemplate="classic";storyBg="#171a1c";storyScreen="chooser";
-    const values=storyValues(r);
-    storyStickers=[
-      {id:uid(),kind:"block",label:"Riepilogo",preset:"summary",text:"",lines:[{text:r.planName||"Allenamento",size:.72,color:"#ffffff",weight:600},{text:values.DURATA,size:1.12,color:"#ffffff",weight:700},{text:`${Math.round(r.volume).toLocaleString("it-IT")} kg  ·  ${r.setsCompleted} serie`,size:.52,color:"#ffffff",weight:500}],x:58,y:680,size:38,color:"#ffffff",weight:600,style:"classic"},
-    ];selectedSticker=0;
+    storyStickers=[makeStorySticker("daySummary",r,0)];selectedSticker=0;
     renderStoryChooser();
   }
   function renderStoryChooser(){
@@ -339,8 +336,21 @@
     </div>`);
     const canvas=$("#storyCanvas");
     const closeSheet=()=>{$$("#socialEditor .lyfta-bottom-sheet").forEach(x=>x.hidden=true);$("#stickerBackdrop").hidden=true;};
-    const openSheet=id=>{closeSheet();$("#stickerBackdrop").hidden=false;$("#"+id).hidden=false;};
-    const switchStickerCategory=cat=>{const root=$("#stickerPicker");if(!root)return;$$("[data-sticker-category]").forEach(b=>b.classList.toggle("active",b.dataset.stickerCategory===cat));const list=cat==="blocks"?[["summaryBlock","Riepilogo"],["volumeBlock","Volume + serie"],["performanceBlock","Performance"],["exerciseBlock","Esercizi"]]:cat==="stats"?[["duration","Durata"],["volume","Volume"],["sets","Serie"],["reps","Ripetizioni"],["exercises","Esercizi"],["calories","Calorie"]]:cat==="text"?[["title","Testo libero"],["brand","Firma GymBro"]]:[["badge","Badge"],["check","Obiettivo"],["star","Record personale"]];root.innerHTML=list.map(([kind,label])=>`<button data-add="${kind}"><span class="lyfta-sticker-thumb">${kind==="summaryBlock"?"1h 35m":kind==="volumeBlock"?"3620 kg":kind==="performanceBlock"?"33 SET":label==="Testo libero"?"Tt":label==="Firma GymBro"?"GYMBRO /":label}</span><small>${label}</small></button>`).join("");$$("[data-add]").forEach(b=>b.onclick=()=>{const st=makeStorySticker(b.dataset.add,r,storyStickers.length);storyStickers.push(st);selectedSticker=storyStickers.length-1;drawStoryGraphic();closeSheet();});};
+    const openSheet=id=>{closeSheet();$("#stickerBackdrop").hidden=false;const sheet=$("#"+id);sheet.hidden=false;sheet.style.transform="translateY(0)";};
+    $$(".lyfta-sheet-grabber").forEach(grabber=>{let startY=0,active=false;grabber.addEventListener("pointerdown",e=>{startY=e.clientY;active=true;grabber.setPointerCapture?.(e.pointerId);});grabber.addEventListener("pointermove",e=>{if(!active)return;const dy=Math.max(0,e.clientY-startY);const sheet=grabber.closest(".lyfta-bottom-sheet");sheet.style.transform=`translateY(${dy}px)`;});const end=e=>{if(!active)return;active=false;const dy=e.clientY-startY;const sheet=grabber.closest(".lyfta-bottom-sheet");if(dy>80)closeSheet();else sheet.style.transform="translateY(0)";};grabber.addEventListener("pointerup",end);grabber.addEventListener("pointercancel",end);});
+    const switchStickerCategory=cat=>{
+      const root=$("#stickerPicker");if(!root)return;
+      $$ ("[data-sticker-category]").forEach(b=>b.classList.toggle("active",b.dataset.stickerCategory===cat));
+      const list=cat==="blocks"?[
+        ["daySummary","Giorno + riepilogo","VEN · 16 OTT"], ["volumeDuration","Volume + durata","3620 kg   1h 35m"],
+        ["statsFour","Quattro statistiche","VOLUME · DURATA · SET · CALORIE"], ["statsSix","Sei statistiche","VOLUME · SET · RIP."],
+        ["verticalStats","Verticale","VOLUME / DURATA / SET"], ["muscleMap","Muscoli","MAPPA MUSCOLARE"],
+        ["daySplit","Giorno + dati","VENERDÌ · 3620 kg"], ["streak","Serie settimanale","♨ 1 · STREAK"],
+        ["personalRecord","Record personale","◇ 5 · PR"], ["volumePR","Volume + PR","3620 kg · PR 5"], ["exerciseList","Elenco esercizi","ESERCIZI · MIGLIOR SET"]
+      ]:cat==="stats"?[["duration","Durata","1h 35m"],["volume","Volume","3620 kg"],["sets","Serie","33 SET"],["reps","Ripetizioni","453 RIP."],["exercises","Esercizi","11"],["calories","Calorie","483 cal"]]:cat==="text"?[["title","Testo libero","Aa"],["brand","Firma GymBro","GYMBRO /"]]:[["badge","Badge","GYMBRO"],["check","Obiettivo","✓"],["star","Record personale","♢ 5 PR"]];
+      root.innerHTML=list.map(([kind,label,preview])=>`<button data-add="${kind}"><span class="lyfta-sticker-thumb">${preview}</span><small>${label}</small></button>`).join("");
+      $$ ("[data-add]").forEach(b=>b.onclick=()=>{const st=makeStorySticker(b.dataset.add,r,storyStickers.length);storyStickers.push(st);selectedSticker=storyStickers.length-1;drawStoryGraphic();closeSheet();});
+    };
     const choosePhoto=()=>$("#storyPhotoInput").click();
     $("#storyBack").onclick=()=>{if(storyScreen==="editor")renderStoryChooser();else closeModal();};
     $("#storyPhotoQuick").onclick=choosePhoto;
@@ -380,23 +390,58 @@
   function uid(){return "st"+Math.random().toString(36).slice(2,10);}
   function storyValues(r){return {DURATA:formatTime(r.duration),VOLUME:`${Math.round(r.volume).toLocaleString("it-IT")} kg`,SERIE:`${r.setsCompleted}/${r.setsPlanned}`,RIPETIZIONI:String(r.reps),ESERCIZI:String(r.exercisesCompleted),CALORIE:"—"};}
   function makeStorySticker(kind,r,index){
-    const v=storyValues(r);let d;
-    if(kind==="summaryBlock")d={label:"Riepilogo",kind:"block",size:52,color:"#ffffff",lines:[{text:r.planName||"ALLENAMENTO",size:0.72,color:"#ffffff",weight:700},{text:v.DURATA,size:1.15,color:"#c3ff3d",weight:700},{text:`${v.ESERCIZI} esercizi  ·  ${v.SERIE} serie`,size:0.52,color:"#ffffff",weight:500}]};
-    else if(kind==="volumeBlock")d={label:"Volume + serie",kind:"block",size:52,color:"#ffffff",lines:[{text:"VOLUME",size:0.48,color:"#ffffff",weight:600},{text:v.VOLUME,size:1.05,color:"#c3ff3d",weight:700},{text:`${v.SERIE} serie completate`,size:0.55,color:"#ffffff",weight:500}]};
-    else if(kind==="performanceBlock")d={label:"Performance",kind:"block",size:52,color:"#ffffff",lines:[{text:"PERFORMANCE",size:0.48,color:"#ffffff",weight:600},{text:`${v.SERIE} serie`,size:0.85,color:"#ffffff",weight:700},{text:`${v.RIPETIZIONI} ripetizioni`,size:0.85,color:"#c3ff3d",weight:700}]};
-    else {const defaults={badge:{label:"Badge",text:"GYMBRO /",size:26,color:"#ffffff"},check:{label:"Obiettivo",text:"OBIETTIVO RAGGIUNTO",size:22,color:"#ffffff"},star:{label:"Record personale",text:"NUOVO RECORD",size:26,color:"#ffffff"},exerciseBlock:{label:"Esercizi",text:`${r.exercisesCompleted} ESERCIZI`,size:30,color:"#ffffff"},duration:{label:"Durata",text:v.DURATA,stat:"DURATA",size:30,color:"#ffffff"},volume:{label:"Volume",text:v.VOLUME,stat:"VOLUME",size:42,color:"#ffffff"},sets:{label:"Serie",text:v.SERIE,stat:"SERIE",size:42,color:"#ffffff"},reps:{label:"Ripetizioni",text:v.RIPETIZIONI,stat:"RIPETIZIONI",size:42,color:"#ffffff"},exercises:{label:"Esercizi",text:v.ESERCIZI,stat:"ESERCIZI",size:42,color:"#ffffff"},calories:{label:"Calorie",text:v.CALORIE,stat:"CALORIE",size:34,color:"#ffffff"},title:{label:"Testo",text:"Scrivi qualcosa…",size:34,color:"#ffffff"},brand:{label:"Firma GymBro",text:"GYMBRO /",size:24,color:"#c3ff3d"}};d=defaults[kind]||defaults.title;}
-    return {id:uid(),kind:kind==="title"?"text":kind,label:d.label,text:d.text||"",stat:d.stat||null,lines:d.lines||null,x:48+(index%2)*60,y:420+(index%4)*65,size:d.size,color:d.color,weight:700,style:storyTemplate};
+    const v=storyValues(r),white="#ffffff",volume=`${Math.round(r.volume||0).toLocaleString("it-IT")} kg`,date=new Date(r.endedAt||Date.now());
+    const day=date.toLocaleDateString("it-IT",{weekday:"long"});
+    const shortDate=date.toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
+    const line=(text,size=0.55,weight=600)=>({text:String(text),size,color:white,weight});
+    const grid=(label,value)=>({label:String(label),value:String(value)});
+    const presets={
+      daySummary:{label:"Giorno + riepilogo",kind:"block",size:34,layout:"daySummary",lines:[line(shortDate,.42,500),line(day[0].toUpperCase()+day.slice(1),1.0,700)],grid:[[grid("Volume",volume),grid("Durata",formatTime(r.duration)),grid("Esercizi",r.exercisesCompleted)]]},
+      volumeDuration:{label:"Volume + durata",kind:"block",size:38,layout:"grid",grid:[[grid("Volume",volume),grid("Durata",formatTime(r.duration))]]},
+      statsFour:{label:"Quattro statistiche",kind:"block",size:30,layout:"grid",grid:[[grid("Volume",volume),grid("Durata",formatTime(r.duration))],[grid("Set",r.setsCompleted),grid("Calorie","—")]]},
+      statsSix:{label:"Sei statistiche",kind:"block",size:26,layout:"grid",grid:[[grid("Volume",volume),grid("Durata",formatTime(r.duration)),grid("Calorie","—")],[grid("Esercizi",r.exercisesCompleted),grid("Set",r.setsCompleted),grid("Rip.",r.reps)]]},
+      verticalStats:{label:"Statistiche verticali",kind:"block",size:32,layout:"vertical",grid:[[grid("Volume",volume)],[grid("Durata",formatTime(r.duration))],[grid("Set",r.setsCompleted)],[grid("Esercizi",r.exercisesCompleted)]]},
+      muscleMap:{label:"Mappa muscolare",kind:"block",size:34,layout:"muscle",lines:[line("MUSCOLI ALLENATI",.46,600),line(`${r.exercisesCompleted} esercizi completati`,.75,700),line("GYMBRO",.4,500)]},
+      daySplit:{label:"Giorno + dati",kind:"block",size:32,layout:"daySplit",lines:[line(day[0].toUpperCase()+day.slice(1),.9,700),line(shortDate,.52,500)],grid:[[grid("Volume",volume),grid("Esercizi",r.exercisesCompleted)],[grid("Durata",formatTime(r.duration)),grid("Set",r.setsCompleted)]]},
+      streak:{label:"Serie settimanale",kind:"block",size:48,layout:"center",lines:[line("♨  1",1.1,700),line("Streak settimanale!",.48,600)]},
+      personalRecord:{label:"Record personale",kind:"block",size:48,layout:"center",lines:[line("♢  5",1.1,700),line("PR",.48,600)]},
+      volumePR:{label:"Volume + PR",kind:"block",size:30,layout:"grid",grid:[[grid("Volume",volume),grid("PR","5")]]},
+      exerciseList:{label:"Elenco esercizi",kind:"block",size:22,layout:"exerciseList",lines:[line(day[0].toUpperCase()+day.slice(1),.95,700),line(shortDate,.58,500),line("──────────",.5,500),line("ESERCIZI                 MIGLIOR SET",.46,700),...(r.exerciseNames||[]).slice(0,7).map((name,i)=>line(`${i+1}. ${name}      —`,.42,500))]},
+      summaryBlock:{label:"Riepilogo",kind:"block",size:40,layout:"grid",grid:[[grid("Durata",formatTime(r.duration)),grid("Volume",volume)],[grid("Set",r.setsCompleted),grid("Esercizi",r.exercisesCompleted)]]},
+      volumeBlock:{label:"Volume + serie",kind:"block",size:42,layout:"vertical",grid:[[grid("Volume",volume)],[grid("Serie",r.setsCompleted)]]},
+      performanceBlock:{label:"Performance",kind:"block",size:42,layout:"grid",grid:[[grid("Set",r.setsCompleted),grid("Ripetizioni",r.reps)]]},
+      exerciseBlock:{label:"Esercizi",kind:"block",size:34,layout:"center",lines:[line(String(r.exercisesCompleted),1.25,700),line("ESERCIZI",.45,600)]},
+      badge:{label:"Badge",kind:"text",text:"GYMBRO /",size:26,color:white},check:{label:"Obiettivo",kind:"text",text:"OBIETTIVO RAGGIUNTO",size:22,color:white},star:{label:"Record personale",kind:"text",text:"♢ 5  PR",size:30,color:white},
+      duration:{label:"Durata",kind:"stat",text:formatTime(r.duration),size:38,color:white},volume:{label:"Volume",kind:"stat",text:volume,size:42,color:white},sets:{label:"Serie",kind:"stat",text:String(r.setsCompleted),size:42,color:white},reps:{label:"Ripetizioni",kind:"stat",text:String(r.reps),size:42,color:white},exercises:{label:"Esercizi",kind:"stat",text:String(r.exercisesCompleted),size:42,color:white},calories:{label:"Calorie",kind:"stat",text:"— cal",size:34,color:white},title:{label:"Testo",kind:"text",text:"Scrivi qualcosa…",size:34,color:white},brand:{label:"Firma GymBro",kind:"text",text:"GYMBRO /",size:24,color:white}
+    };
+    const d=presets[kind]||presets.title;
+    return {...d,id:uid(),kind:d.kind||"block",text:d.text||"",stat:null,x:Math.round(55+(index%2)*30),y:Math.round(430+(index%3)*75),color:white,weight:700,style:"classic",scale:1};
   }
-  function stickerText(st,r){if(st.customText)return st.customText;if(st.kind==="text")return st.text;if(st.kind==="brand")return "GYMBRO /";const v=storyValues(r);return v[st.stat]??st.text;}
-  function stickerBounds(ctx,st){ctx.save();let w=40,h=st.size*1.25;if(st.lines){h=0;w=0;for(const line of st.lines){ctx.font=`${line.weight||700} ${Math.max(12,st.size*line.size)}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;w=Math.max(w,ctx.measureText(line.text).width);h+=Math.max(16,st.size*line.size*1.28);}}else{ctx.font=`${st.weight||700} ${st.size}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;w=Math.max(40,ctx.measureText(stickerText(st,storyRecord)).width+8);h=st.size*1.25;}ctx.restore();return {x:st.x,y:st.y-h,w,h};}
+  function stickerText(st,r){if(st.customText)return st.customText;if(st.kind==="text"||st.kind==="stat")return st.text;if(st.kind==="brand")return "GYMBRO /";const v=storyValues(r);return v[st.stat]??st.text??st.label;}
+  function stickerFont(st, size, weight=700){return `${weight||700} ${Math.max(10,size)}px ${(st.style==="editorial"||st.style==="Editoriale")?"Georgia,serif":"Georgia,serif"}`;}
+  function stickerBounds(ctx,st){
+    ctx.save();let w=40,h=st.size*1.25;ctx.textBaseline="alphabetic";
+    if(st.grid){const cols=Math.max(...st.grid.map(row=>row.length));w=st.grid.reduce((m,row)=>Math.max(m,row.reduce((sum,cell)=>sum+Math.max(ctx.measureText(cell.value).width,ctx.measureText(cell.label).width)+22,0)),0)/Math.max(1,st.grid.length);w=Math.max(w,st.size*cols*2.3);h=st.grid.length*st.size*1.55;if(st.lines){h+=st.lines.reduce((sum,ln)=>sum+Math.max(10,st.size*ln.size)*1.28,0)+st.size*.2;for(const ln of st.lines){ctx.font=stickerFont(st,st.size*ln.size,ln.weight);w=Math.max(w,ctx.measureText(ln.text).width);}}}
+    else if(st.lines){h=0;w=0;for(const ln of st.lines){ctx.font=stickerFont(st,st.size*ln.size,ln.weight);w=Math.max(w,ctx.measureText(ln.text).width);h+=Math.max(14,st.size*ln.size*1.34);}}
+    else{ctx.font=stickerFont(st,st.size,st.weight);w=Math.max(40,ctx.measureText(stickerText(st,storyRecord)).width+8);h=st.size*1.25;}
+    ctx.restore();return {x:st.x,y:st.y-h,w,h};
+  }
   function drawStoryGraphic(showHandles=true,targetCanvas=null){
     const canvas=targetCanvas||$("#storyCanvas");if(!canvas||!storyRecord)return;const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,r=storyRecord;ctx.clearRect(0,0,w,h);
-    if(storyPhoto){const scale=Math.max(w/storyPhoto.width,h/storyPhoto.height),iw=storyPhoto.width*scale,ih=storyPhoto.height*scale;ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);}else{ctx.fillStyle=storyBg;ctx.fillRect(0,0,w,h);if(storyBg!=="#c3ff3d"){const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,"#28321e55");g.addColorStop(1,"#05060622");ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}}
-    storyStickers.forEach((st,i)=>{ctx.save();ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.shadowColor=storyPhoto?"rgba(0,0,0,.55)":"transparent";ctx.shadowBlur=storyPhoto?5:0;ctx.shadowOffsetY=1;
-      if(st.lines){const total=stickerBounds(ctx,st).h;let yy=st.y-total;for(const line of st.lines){const size=Math.max(10,st.size*line.size);ctx.font=`${line.weight||700} ${size}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;ctx.fillStyle=line.color||st.color||"#ffffff";yy+=size;ctx.fillText(line.text,st.x,yy);yy+=Math.max(16,size*0.28);}}
-      else{const text=stickerText(st,r),size=Math.max(10,st.size);ctx.font=`${st.weight||700} ${size}px ${s(t.style==="Editoriale"||t.style==="editorial")?"Georgia,serif":"Arial,sans-serif"}`;if(st.style==="Contorno"){ctx.lineWidth=Math.max(1,size/22);ctx.strokeStyle=st.color;ctx.strokeText(text,st.x,st.y);}else{ctx.fillStyle=st.style==="GymBro"&&st.kind==="title"?"#c3ff3d":st.color||"#ffffff";ctx.fillText(text,st.x,st.y);}}
-      ctx.restore();if(showHandles&&i===selectedSticker){const b=stickerBounds(ctx,st);ctx.save();ctx.strokeStyle="#c3ff3d";ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.strokeRect(b.x-6,b.y-6,b.w+12,b.h+12);ctx.setLineDash([]);ctx.fillStyle="#c3ff3d";ctx.beginPath();ctx.arc(b.x+b.w+8,b.y+b.h+8,13,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#111315";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.x+b.w+2,b.y+b.h+14);ctx.lineTo(b.x+b.w+14,b.y+b.h+2);ctx.stroke();ctx.restore();}});
-    if(showHandles){ctx.save();ctx.fillStyle="#c3ff3d";ctx.font="bold 14px Arial";ctx.fillText("GYMBRO / TRACCIA. SPINGI. MIGLIORA.",28,h-28);ctx.restore();}
+    if(storyPhoto){const scale=Math.max(w/storyPhoto.width,h/storyPhoto.height),iw=storyPhoto.width*scale,ih=storyPhoto.height*scale;ctx.drawImage(storyPhoto,(w-iw)/2,(h-ih)/2,iw,ih);}else{ctx.fillStyle=storyBg;ctx.fillRect(0,0,w,h);}
+    storyStickers.forEach((st,i)=>{
+      ctx.save();ctx.textBaseline="alphabetic";ctx.textAlign="left";ctx.shadowColor=storyPhoto?"rgba(0,0,0,.55)":"transparent";ctx.shadowBlur=storyPhoto?4:0;ctx.shadowOffsetY=1;
+      if(st.grid){
+        const rows=st.grid,cols=Math.max(...rows.map(row=>row.length)),cellW=Math.max(st.size*2.5,stickerBounds(ctx,st).w/cols),rowH=st.size*1.55;
+        let yy=st.y-stickerBounds(ctx,st).h+st.size*.45;
+        if(st.lines){for(const ln of st.lines){const fs=Math.max(10,st.size*ln.size);ctx.font=stickerFont(st,fs,ln.weight);ctx.fillStyle="#ffffff";ctx.fillText(ln.text,st.x,yy+fs);yy+=fs*1.28;}yy+=st.size*.2;}
+        rows.forEach(row=>{row.forEach((cell,j)=>{const xx=st.x+j*cellW;ctx.textAlign="center";ctx.font=stickerFont(st,st.size*.43,600);ctx.fillStyle="#ffffff";ctx.fillText(cell.label,xx+cellW/2,yy);ctx.font=stickerFont(st,st.size*.88,700);ctx.fillText(cell.value,xx+cellW/2,yy+st.size*.92);});yy+=rowH;});ctx.textAlign="left";
+      }else if(st.lines){const total=stickerBounds(ctx,st).h;let yy=st.y-total;for(const ln of st.lines){const size=Math.max(10,st.size*ln.size);ctx.font=stickerFont(st,size,ln.weight);ctx.fillStyle=ln.color||"#ffffff";yy+=size;ctx.fillText(ln.text,st.x,yy);yy+=Math.max(12,size*.28);}}
+      else{const text=stickerText(st,r),size=Math.max(10,st.size);ctx.font=stickerFont(st,size,st.weight);ctx.fillStyle="#ffffff";ctx.fillText(text,st.x,st.y);}
+      ctx.restore();
+      if(showHandles&&i===selectedSticker){const b=stickerBounds(ctx,st);ctx.save();ctx.strokeStyle="#ffffffaa";ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.strokeRect(b.x-6,b.y-6,b.w+12,b.h+12);ctx.setLineDash([]);ctx.fillStyle="#ffffff";ctx.beginPath();ctx.arc(b.x+b.w+8,b.y+b.h+8,13,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#111315";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(b.x+b.w+2,b.y+b.h+14);ctx.lineTo(b.x+b.w+14,b.y+b.h+2);ctx.stroke();ctx.restore();}
+    });
+    if(showHandles){ctx.save();ctx.fillStyle="#ffffff";ctx.font="bold 14px Arial";ctx.fillText("GYMBRO",28,h-28);ctx.restore();}
   }
   function loadImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=reject;img.src=src;});}
   function storyBlob(){return new Promise((resolve,reject)=>{const out=document.createElement("canvas");out.width=1080;out.height=1920;drawStoryGraphic(false,out);out.toBlob(b=>b?resolve(b):reject(new Error("PNG non disponibile")),"image/png");});}

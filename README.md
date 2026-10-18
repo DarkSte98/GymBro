@@ -15,3 +15,10 @@ Sostituire tutti e 7 i file nella root del repository: `index.html`, `styles.css
 
 ## Limiti da verificare su dispositivo
 Il comportamento dei gesti multi-touch e del foglio di condivisione dipende dal browser e dal sistema operativo. Il prototipo non può aprire direttamente la schermata di composizione di Instagram Stories su tutti i dispositivi: dove l'API Web Share non supporta file, salva l'immagine per selezionarla in Instagram.
+
+
+## v15 — Adesivi preimpostati e gesto diretto
+- Corretto un errore JavaScript che impediva il rendering dell’editor: riferimenti a una variabile inesistente nel calcolo dei font.
+- Aggiunti blocchi preimpostati: giorno e riepilogo, volume/durata, griglie statistiche, layout verticale, streak, record personale, mappa muscolare e lista esercizi.
+- Tutti gli adesivi sono testo bianco senza riquadri opachi e vengono inseriti sulla foto scelta.
+- Ridimensionamento a due dita nell’anteprima; cache aggiornata.
